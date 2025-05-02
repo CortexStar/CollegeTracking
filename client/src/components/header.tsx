@@ -1,12 +1,8 @@
-import { Menu, Sun, Moon } from "lucide-react";
+import { Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme-provider";
 
-interface HeaderProps {
-  toggleSidebar: () => void;
-}
-
-export default function Header({ toggleSidebar }: HeaderProps) {
+export default function Header() {
   const { theme, setTheme } = useTheme();
 
   const toggleTheme = () => {
@@ -32,15 +28,6 @@ export default function Header({ toggleSidebar }: HeaderProps) {
               ) : (
                 <Moon className="h-5 w-5" />
               )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleSidebar}
-              aria-label="Toggle sidebar"
-              className="md:hidden"
-            >
-              <Menu className="h-5 w-5" />
             </Button>
           </div>
         </div>

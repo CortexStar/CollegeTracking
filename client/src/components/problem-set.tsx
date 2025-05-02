@@ -58,7 +58,21 @@ export default function ProblemSet({ problemSet, isActive }: ProblemSetProps) {
       
       {isExpanded && (
         <CardContent className="p-6 space-y-6">
-          {/* Topics & Readings */}
+          {/* Lectures - Now above Topics & Readings */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+              Lectures
+            </h3>
+            <ul className="space-y-2 list-disc list-inside text-gray-700 dark:text-gray-300 ml-2">
+              {problemSet.lectures.map((lecture, index) => (
+                <li key={index}>
+                  <span className="font-medium">Lecture {lecture.number}:</span> {lecture.title}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Topics & Readings - Moved below Lectures */}
           <div>
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
               Topics & Readings (4th ed.)
@@ -83,20 +97,6 @@ export default function ProblemSet({ problemSet, isActive }: ProblemSetProps) {
                 </TableBody>
               </Table>
             </div>
-          </div>
-
-          {/* Lectures */}
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
-              Lectures
-            </h3>
-            <ul className="space-y-2 list-disc list-inside text-gray-700 dark:text-gray-300 ml-2">
-              {problemSet.lectures.map((lecture, index) => (
-                <li key={index}>
-                  <span className="font-medium">Lecture {lecture.number}:</span> {lecture.title}
-                </li>
-              ))}
-            </ul>
           </div>
 
           {/* Assigned Problems */}
