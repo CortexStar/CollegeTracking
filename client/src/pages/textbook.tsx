@@ -1,13 +1,22 @@
 import { useState, useEffect } from 'react';
-import { Document, Page, pdfjs } from 'react-pdf';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ChevronLeft, ChevronRight, Minus, Plus, RotateCw, Book } from "lucide-react";
+import { ChevronLeft, ChevronRight, Minus, Plus, RotateCw, Book, FileText } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import Header from "@/components/header";
+import Footer from "@/components/footer";
+import TextbookToc from "@/components/textbook-toc";
+
+// We'll dynamically import react-pdf to avoid SSR issues
+import { Document, Page } from 'react-pdf';
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import 'react-pdf/dist/esm/Page/TextLayer.css';
+
+import { pdfjs } from 'react-pdf';
 
 // Set worker path for PDF.js
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
 export default function TextbookPage() {
   const [numPages, setNumPages] = useState<number | null>(null);
@@ -55,6 +64,7 @@ export default function TextbookPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Header />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
         <div className="max-w-6xl mx-auto mb-8">
           <div className="flex items-center justify-between mb-6">
@@ -67,10 +77,7 @@ export default function TextbookPage() {
               </p>
             </div>
             <div>
-              <Button variant="outline" className="flex items-center gap-2">
-                <Book className="h-4 w-4" />
-                Table of Contents
-              </Button>
+              <TextbookToc onSelectPage={setPageNumber} />
             </div>
           </div>
 
@@ -178,6 +185,7 @@ export default function TextbookPage() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
