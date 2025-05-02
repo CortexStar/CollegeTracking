@@ -21,14 +21,14 @@ export default function TextbookPage() {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header />
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3 flex-grow">
         <div className="max-w-6xl mx-auto mb-0">
           <div className="flex items-center justify-between mb-0">
             <div className="max-w-3xl">
               <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100">
                 Introduction to Linear Algebra
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 text-lg mt-3">
+              <p className="text-gray-600 dark:text-gray-400 text-lg mt-1">
                 Fourth Edition • Gilbert Strang
               </p>
             </div>
@@ -73,7 +73,7 @@ export default function TextbookPage() {
                     src="/linear-algebra-book.pdf" 
                     type="application/pdf"
                     width="100%" 
-                    height="900px" 
+                    height="1200px" 
                     className=""
                   />
                 </div>
