@@ -44,9 +44,6 @@ export default function Header() {
                       Introduction to Linear Algebra
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => window.open('/linear-algebra-book.pdf', '_blank')}>
-                    Full PDF
-                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
