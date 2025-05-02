@@ -143,15 +143,19 @@ export default function TextbookToc({ onSelectPage }: TextbookTocProps) {
   const [open, setOpen] = useState(false);
   
   const handleSelectSection = (page: number) => {
+    // Adjust page number to account for the difference between textbook page numbers and PDF page numbers
+    // Add 10 to every page number except for page 2 (section 1.1) which is correct
+    const adjustedPage = page === 2 ? page : page + 10;
+    
     // Only call if function is provided
     if (typeof onSelectPage === 'function') {
-      onSelectPage(page);
+      onSelectPage(adjustedPage);
     }
     setOpen(false);
     
     // Open the PDF at that page in a new tab as a fallback
     // Note: This is a limited solution as most PDF viewers don't support page parameters in URLs
-    window.open(`/linear-algebra-book.pdf#page=${page}`, '_blank');
+    window.open(`/linear-algebra-book.pdf#page=${adjustedPage}`, '_blank');
   };
 
   return (
@@ -187,7 +191,8 @@ export default function TextbookToc({ onSelectPage }: TextbookTocProps) {
                         </div>
                         <div className="flex items-center gap-1 text-gray-500">
                           <span>p. {section.page}</span>
-                          <ChevronRight className="h-3 w-3" />
+                          <span className="text-xs opacity-70">(PDF: {section.page === 2 ? 2 : section.page + 10})</span>
+                          <ChevronRight className="h-3 w-3 ml-1" />
                         </div>
                       </div>
                     ))}

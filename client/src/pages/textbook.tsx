@@ -41,31 +41,33 @@ export default function TextbookPage() {
             <CardContent className="p-0">
               {/* PDF Viewer Controls - Simplified */}
               <div className="flex items-center justify-end p-2.5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => window.print()}
-                  aria-label="Print"
-                  className="flex items-center gap-1"
-                >
-                  <FileText className="h-3.5 w-3.5" />
-                  Print
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => window.open('/linear-algebra-book.pdf', '_blank')}
+                    aria-label="Full PDF"
+                    className="flex items-center gap-1"
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    Full PDF
+                  </Button>
+                  
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => window.print()}
+                    aria-label="Print"
+                    className="flex items-center gap-1"
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    Print
+                  </Button>
+                </div>
               </div>
 
               {/* PDF Document */}
               <div className="flex flex-col items-center justify-center p-4 bg-white dark:bg-gray-800 min-h-[800px] overflow-auto">
-                <div className="w-full flex justify-end mb-4">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex items-center gap-1"
-                    onClick={() => window.open('/linear-algebra-book.pdf', '_blank')}
-                  >
-                    <FileText className="h-4 w-4" />
-                    Full PDF
-                  </Button>
-                </div>
                 
                 <div className="w-full">
                   <embed 
