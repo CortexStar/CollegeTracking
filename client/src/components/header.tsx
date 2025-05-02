@@ -29,7 +29,6 @@ export default function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="flex items-center gap-1 h-9">
                     Linear Algebra - MIT
-                    <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56">
@@ -42,12 +41,24 @@ export default function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
               
-              <Button variant="outline" size="sm" className="flex items-center gap-1 h-9" asChild>
-                <Link href="/textbook">
-                  <Book className="h-4 w-4" />
-                  Textbook
-                </Link>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex items-center gap-1 h-9">
+                    <Book className="h-4 w-4" />
+                    Textbook
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  <DropdownMenuItem asChild>
+                    <Link href="/textbook">
+                      Textbook Viewer
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.open('/linear-algebra-book.pdf', '_blank')}>
+                    Full PDF
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
           <div className="flex items-center space-x-2">

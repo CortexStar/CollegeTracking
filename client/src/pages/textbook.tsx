@@ -67,14 +67,13 @@ export default function TextbookPage() {
               </div>
 
               {/* PDF Document */}
-              <div className="flex flex-col items-center justify-center p-4 bg-white dark:bg-gray-800 min-h-[800px] overflow-auto">
-                
+              <div className="flex flex-col items-center justify-center p-1 bg-white dark:bg-gray-800 min-h-[800px] overflow-auto">
                 <div className="w-full">
                   <embed 
                     src="/linear-algebra-book.pdf" 
                     type="application/pdf"
                     width="100%" 
-                    height="700px" 
+                    height="850px" 
                     className="shadow-md"
                   />
                 </div>
@@ -82,7 +81,7 @@ export default function TextbookPage() {
             </CardContent>
           </Card>
           
-          <div className="text-center mt-6 text-gray-500 dark:text-gray-400 text-sm">
+          <div className="text-center mt-2 text-gray-500 dark:text-gray-400 text-xs">
             <p>© Gilbert Strang. Used with permission.</p>
           </div>
         </div>
