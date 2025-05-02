@@ -35,13 +35,13 @@ export default function ProblemSet({ problemSet, isActive }: ProblemSetProps) {
   return (
     <Card 
       id={problemSet.id}
-      className="mb-8 border border-gray-200 dark:border-gray-700 shadow-sm"
+      className="mb-10 border border-gray-200 dark:border-gray-700 shadow-sm"
     >
       <CardHeader 
-        className="px-8 py-6 border-b border-gray-200 dark:border-gray-700 flex flex-row items-center justify-between cursor-pointer"
+        className="px-10 py-7 border-b border-gray-200 dark:border-gray-700 flex flex-row items-center justify-between cursor-pointer"
         onClick={handleToggleExpand}
       >
-        <CardTitle className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+        <CardTitle className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
           {problemSet.title}
         </CardTitle>
         <button
@@ -49,23 +49,23 @@ export default function ProblemSet({ problemSet, isActive }: ProblemSetProps) {
           aria-label={isExpanded ? "Collapse" : "Expand"}
         >
           {isExpanded ? (
-            <ChevronUp className="h-5 w-5" />
+            <ChevronUp className="h-6 w-6" />
           ) : (
-            <ChevronDown className="h-5 w-5" />
+            <ChevronDown className="h-6 w-6" />
           )}
         </button>
       </CardHeader>
       
       {isExpanded && (
-        <CardContent className="p-8 space-y-8">
+        <CardContent className="p-10 space-y-10">
           {/* Lectures - Now above Topics & Readings */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-5">
+            <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-6 text-center">
               Lectures
             </h3>
-            <ul className="space-y-3 list-disc list-inside text-gray-700 dark:text-gray-300 ml-2">
+            <ul className="space-y-3 list-disc list-inside text-gray-700 dark:text-gray-300 ml-4 text-base">
               {problemSet.lectures.map((lecture, index) => (
-                <li key={index}>
+                <li key={index} className="text-base">
                   <span className="font-medium">Lecture {lecture.number}:</span> {lecture.title}
                 </li>
               ))}
@@ -74,24 +74,24 @@ export default function ProblemSet({ problemSet, isActive }: ProblemSetProps) {
 
           {/* Topics & Readings - Moved below Lectures */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-5">
+            <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-6 text-center">
               Topics & Readings (4th ed.)
             </h3>
-            <div className={cn("overflow-x-auto", isMobile && "-mx-8 px-8")}>
+            <div className={cn("overflow-x-auto", isMobile && "-mx-10 px-10")}>
               <Table>
                 <TableHeader className="bg-gray-50 dark:bg-gray-800">
                   <TableRow>
-                    <TableHead className="w-16 text-xs uppercase">Ses #</TableHead>
-                    <TableHead className="text-xs uppercase">Topic title</TableHead>
-                    <TableHead className="w-36 text-xs uppercase">Reading range</TableHead>
+                    <TableHead className="w-16 text-sm uppercase">Ses #</TableHead>
+                    <TableHead className="text-sm uppercase">Topic title</TableHead>
+                    <TableHead className="w-36 text-sm uppercase">Reading range</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {problemSet.topics.map((topic, index) => (
                     <TableRow key={index}>
-                      <TableCell className="whitespace-nowrap text-sm">{topic.session}</TableCell>
-                      <TableCell className="text-sm font-medium">{topic.title}</TableCell>
-                      <TableCell className="whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{topic.reading}</TableCell>
+                      <TableCell className="whitespace-nowrap text-base">{topic.session}</TableCell>
+                      <TableCell className="text-base font-medium">{topic.title}</TableCell>
+                      <TableCell className="whitespace-nowrap text-base text-gray-500 dark:text-gray-400">{topic.reading}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -101,24 +101,24 @@ export default function ProblemSet({ problemSet, isActive }: ProblemSetProps) {
 
           {/* Assigned Problems */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-5">
+            <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-6 text-center">
               Assigned Problems (printed pages)
             </h3>
-            <div className={cn("overflow-x-auto", isMobile && "-mx-8 px-8")}>
+            <div className={cn("overflow-x-auto", isMobile && "-mx-10 px-10")}>
               <Table>
                 <TableHeader className="bg-gray-50 dark:bg-gray-800">
                   <TableRow>
-                    <TableHead className="w-20 text-xs uppercase">Section</TableHead>
-                    <TableHead className="text-xs uppercase">Problems</TableHead>
-                    <TableHead className="w-16 text-xs uppercase">Page</TableHead>
+                    <TableHead className="w-20 text-sm uppercase">Section</TableHead>
+                    <TableHead className="text-sm uppercase">Problems</TableHead>
+                    <TableHead className="w-16 text-sm uppercase">Page</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {problemSet.problems.map((problem, index) => (
                     <TableRow key={index}>
-                      <TableCell className="whitespace-nowrap text-sm">{problem.section}</TableCell>
-                      <TableCell className="text-sm">{problem.problems}</TableCell>
-                      <TableCell className="whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{problem.page}</TableCell>
+                      <TableCell className="whitespace-nowrap text-base">{problem.section}</TableCell>
+                      <TableCell className="text-base">{problem.problems}</TableCell>
+                      <TableCell className="whitespace-nowrap text-base text-gray-500 dark:text-gray-400">{problem.page}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -126,7 +126,7 @@ export default function ProblemSet({ problemSet, isActive }: ProblemSetProps) {
             </div>
           </div>
           
-          <Separator className="mt-4" />
+          <Separator className="mt-6" />
         </CardContent>
       )}
     </Card>

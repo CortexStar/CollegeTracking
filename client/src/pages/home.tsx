@@ -44,17 +44,17 @@ export default function Home() {
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header />
       
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
-        <div className="mb-8 max-w-5xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-grow">
+        <div className="mb-10 max-w-6xl mx-auto text-center">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
             Linear Algebra — Problem‑Set Guide (4th Edition)
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-gray-600 dark:text-gray-400 text-lg">
             A comprehensive guide for MIT's 18.06 Linear Algebra course
           </p>
         </div>
         
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           {problemSets.map((problemSet) => (
             <ProblemSet 
               key={problemSet.id}
@@ -63,7 +63,7 @@ export default function Home() {
             />
           ))}
 
-          <div className="mt-8 text-center text-gray-500 dark:text-gray-400 text-sm">
+          <div className="mt-10 text-center text-gray-500 dark:text-gray-400 text-sm">
             <p>Guide finalized through Problem Set 10.</p>
           </div>
         </div>
