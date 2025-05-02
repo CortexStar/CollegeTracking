@@ -47,7 +47,7 @@ export default function Home() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-grow">
         <div className="mb-10 max-w-6xl mx-auto text-center">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-            Linear Algebra — Problem‑Set Guide (4th Edition)
+            Linear Algebra — MIT
           </h1>
           <p className="text-gray-600 dark:text-gray-400 text-lg">
             A comprehensive guide for MIT's 18.06 Linear Algebra course
