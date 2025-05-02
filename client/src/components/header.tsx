@@ -35,13 +35,13 @@ export default function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="flex items-center gap-1 h-9">
                     <Book className="h-4 w-4" />
-                    Introduction to Linear Algebra
+                    Book
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56">
                   <DropdownMenuItem asChild>
                     <Link href="/textbook">
-                      Textbook Viewer
+                      Introduction to Linear Algebra
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => window.open('/linear-algebra-book.pdf', '_blank')}>
