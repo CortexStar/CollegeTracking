@@ -25,7 +25,7 @@ interface ProblemSetProps {
 }
 
 export default function ProblemSet({ problemSet, isActive }: ProblemSetProps) {
-  const [isExpanded, setIsExpanded] = useState(isActive);
+  const [isExpanded, setIsExpanded] = useState(false);
   const isMobile = useMobile();
 
   const handleToggleExpand = () => {
