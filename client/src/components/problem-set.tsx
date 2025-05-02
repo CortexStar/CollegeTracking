@@ -81,17 +81,17 @@ export default function ProblemSet({ problemSet, isActive }: ProblemSetProps) {
               <Table>
                 <TableHeader className="bg-gray-50 dark:bg-gray-800">
                   <TableRow>
-                    <TableHead className="w-16 text-sm uppercase">Ses #</TableHead>
+                    <TableHead className="w-16 text-sm uppercase text-center">Ses #</TableHead>
                     <TableHead className="text-sm uppercase">Topic title</TableHead>
-                    <TableHead className="w-36 text-sm uppercase">Reading range</TableHead>
+                    <TableHead className="w-36 text-sm uppercase text-center">Reading range</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {problemSet.topics.map((topic, index) => (
                     <TableRow key={index}>
-                      <TableCell className="whitespace-nowrap text-base">{topic.session}</TableCell>
+                      <TableCell className="whitespace-nowrap text-base text-center">{topic.session}</TableCell>
                       <TableCell className="text-base font-medium">{topic.title}</TableCell>
-                      <TableCell className="whitespace-nowrap text-base text-gray-500 dark:text-gray-400">{topic.reading}</TableCell>
+                      <TableCell className="whitespace-nowrap text-base text-gray-500 dark:text-gray-400 text-center">{topic.reading}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -108,17 +108,17 @@ export default function ProblemSet({ problemSet, isActive }: ProblemSetProps) {
               <Table>
                 <TableHeader className="bg-gray-50 dark:bg-gray-800">
                   <TableRow>
-                    <TableHead className="w-20 text-sm uppercase">Section</TableHead>
+                    <TableHead className="w-20 text-sm uppercase text-center">Section</TableHead>
                     <TableHead className="text-sm uppercase">Problems</TableHead>
-                    <TableHead className="w-16 text-sm uppercase">Page</TableHead>
+                    <TableHead className="w-16 text-sm uppercase text-center">Page</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {problemSet.problems.map((problem, index) => (
                     <TableRow key={index}>
-                      <TableCell className="whitespace-nowrap text-base">{problem.section}</TableCell>
+                      <TableCell className="whitespace-nowrap text-base text-center">{problem.section}</TableCell>
                       <TableCell className="text-base">{problem.problems}</TableCell>
-                      <TableCell className="whitespace-nowrap text-base text-gray-500 dark:text-gray-400">{problem.page}</TableCell>
+                      <TableCell className="whitespace-nowrap text-base text-gray-500 dark:text-gray-400 text-center">{problem.page}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
