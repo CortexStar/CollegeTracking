@@ -39,50 +39,35 @@ export default function TextbookPage() {
 
           <Card className="border border-gray-200 dark:border-gray-700">
             <CardContent className="p-0">
-              {/* PDF Viewer Controls */}
-              <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">
-                    Use the browser's PDF viewer controls for navigation
-                  </span>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.print()}
-                    aria-label="Print"
-                    className="flex items-center gap-1"
-                  >
-                    <FileText className="h-4 w-4" />
-                    Print
-                  </Button>
-                </div>
+              {/* PDF Viewer Controls - Simplified */}
+              <div className="flex items-center justify-end p-2.5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => window.print()}
+                  aria-label="Print"
+                  className="flex items-center gap-1"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  Print
+                </Button>
               </div>
 
               {/* PDF Document */}
               <div className="flex flex-col items-center justify-center p-4 bg-white dark:bg-gray-800 min-h-[800px] overflow-auto">
-                <div className="text-center mb-6">
-                  <h3 className="text-xl font-medium mb-2">Introduction to Linear Algebra PDF</h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    Use the button below to access the complete textbook PDF.
-                  </p>
+                <div className="w-full flex justify-end mb-4">
                   <Button 
-                    variant="default" 
-                    size="lg" 
-                    className="mx-auto"
+                    variant="outline" 
+                    size="sm" 
+                    className="flex items-center gap-1"
                     onClick={() => window.open('/linear-algebra-book.pdf', '_blank')}
                   >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Open Full Textbook PDF
+                    <FileText className="h-4 w-4" />
+                    Full PDF
                   </Button>
                 </div>
                 
-                <div className="w-full mt-8 text-center">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 italic mb-6">
-                    Preview of selected pages below. For best experience, use the button above to open the full PDF.
-                  </p>
+                <div className="w-full">
                   <embed 
                     src="/linear-algebra-book.pdf" 
                     type="application/pdf"

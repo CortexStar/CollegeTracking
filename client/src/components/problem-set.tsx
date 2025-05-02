@@ -63,13 +63,13 @@ export default function ProblemSet({ problemSet, isActive }: ProblemSetProps) {
             <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-6 text-center">
               Lectures
             </h3>
-            <ul className="space-y-3 list-disc list-inside text-gray-700 dark:text-gray-300 ml-4 text-base">
+            <div className="space-y-3 text-gray-700 dark:text-gray-300 text-base">
               {problemSet.lectures.map((lecture, index) => (
-                <li key={index} className="text-base">
+                <div key={index} className="text-base">
                   <span className="font-medium">Lecture {lecture.number}:</span> {lecture.title}
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
 
           {/* Topics & Readings - Moved below Lectures */}
