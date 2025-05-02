@@ -38,7 +38,7 @@ export default function ProblemSet({ problemSet, isActive }: ProblemSetProps) {
       className="mb-8 border border-gray-200 dark:border-gray-700 shadow-sm"
     >
       <CardHeader 
-        className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex flex-row items-center justify-between cursor-pointer"
+        className="px-8 py-6 border-b border-gray-200 dark:border-gray-700 flex flex-row items-center justify-between cursor-pointer"
         onClick={handleToggleExpand}
       >
         <CardTitle className="text-xl font-semibold text-gray-900 dark:text-gray-100">
@@ -57,13 +57,13 @@ export default function ProblemSet({ problemSet, isActive }: ProblemSetProps) {
       </CardHeader>
       
       {isExpanded && (
-        <CardContent className="p-6 space-y-6">
+        <CardContent className="p-8 space-y-8">
           {/* Lectures - Now above Topics & Readings */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-5">
               Lectures
             </h3>
-            <ul className="space-y-2 list-disc list-inside text-gray-700 dark:text-gray-300 ml-2">
+            <ul className="space-y-3 list-disc list-inside text-gray-700 dark:text-gray-300 ml-2">
               {problemSet.lectures.map((lecture, index) => (
                 <li key={index}>
                   <span className="font-medium">Lecture {lecture.number}:</span> {lecture.title}
@@ -74,10 +74,10 @@ export default function ProblemSet({ problemSet, isActive }: ProblemSetProps) {
 
           {/* Topics & Readings - Moved below Lectures */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-5">
               Topics & Readings (4th ed.)
             </h3>
-            <div className={cn("overflow-x-auto", isMobile && "-mx-6 px-6")}>
+            <div className={cn("overflow-x-auto", isMobile && "-mx-8 px-8")}>
               <Table>
                 <TableHeader className="bg-gray-50 dark:bg-gray-800">
                   <TableRow>
@@ -101,10 +101,10 @@ export default function ProblemSet({ problemSet, isActive }: ProblemSetProps) {
 
           {/* Assigned Problems */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-5">
               Assigned Problems (printed pages)
             </h3>
-            <div className={cn("overflow-x-auto", isMobile && "-mx-6 px-6")}>
+            <div className={cn("overflow-x-auto", isMobile && "-mx-8 px-8")}>
               <Table>
                 <TableHeader className="bg-gray-50 dark:bg-gray-800">
                   <TableRow>

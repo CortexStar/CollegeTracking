@@ -45,7 +45,7 @@ export default function Home() {
       <Header />
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
-        <div className="mb-8 max-w-4xl mx-auto">
+        <div className="mb-8 max-w-5xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">
             Linear Algebra — Problem‑Set Guide (4th Edition)
           </h1>
@@ -54,7 +54,7 @@ export default function Home() {
           </p>
         </div>
         
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           {problemSets.map((problemSet) => (
             <ProblemSet 
               key={problemSet.id}
