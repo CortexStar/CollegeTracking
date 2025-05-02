@@ -1,9 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { ChevronLeft, ChevronRight, Minus, Plus, RotateCw, Book, FileText } from "lucide-react";
-import { Slider } from "@/components/ui/slider";
+import { FileText } from "lucide-react";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import TextbookToc from "@/components/textbook-toc";

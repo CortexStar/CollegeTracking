@@ -143,7 +143,8 @@ export default function TextbookToc({ onSelectPage }: TextbookTocProps) {
   const [open, setOpen] = useState(false);
   
   const handleSelectSection = (page: number) => {
-    if (onSelectPage) {
+    // Only call if function is provided
+    if (typeof onSelectPage === 'function') {
       onSelectPage(page);
     }
     setOpen(false);
