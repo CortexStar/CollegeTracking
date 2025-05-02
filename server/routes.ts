@@ -16,6 +16,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Explicitly serve the PDF file
+  app.get('/linear-algebra-book.pdf', (req, res) => {
+    const pdfPath = path.resolve(process.cwd(), 'public', 'linear-algebra-book.pdf');
+    res.sendFile(pdfPath, (err) => {
+      if (err) {
+        console.error('Error serving PDF:', err);
+        res.status(404).send('PDF file not found');
+      }
+    });
+  });
+
   // Create HTTP server
   const httpServer = createServer(app);
 
