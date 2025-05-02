@@ -75,7 +75,7 @@ export default function ProblemSet({ problemSet, isActive }: ProblemSetProps) {
           {/* Topics & Readings - Moved below Lectures */}
           <div>
             <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-6 text-center">
-              Topics & Readings (4th ed.)
+              Topics & Readings
             </h3>
             <div className={cn("overflow-x-auto", isMobile && "-mx-10 px-10")}>
               <Table>
@@ -102,7 +102,7 @@ export default function ProblemSet({ problemSet, isActive }: ProblemSetProps) {
           {/* Assigned Problems */}
           <div>
             <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-6 text-center">
-              Assigned Problems (printed pages)
+              Assigned Problems
             </h3>
             <div className={cn("overflow-x-auto", isMobile && "-mx-10 px-10")}>
               <Table>

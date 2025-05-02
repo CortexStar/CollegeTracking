@@ -62,10 +62,25 @@ export default function TextbookPage() {
               </div>
 
               {/* PDF Document */}
-              <div className="flex justify-center p-4 bg-white dark:bg-gray-800 min-h-[800px] overflow-auto">
+              <div className="flex flex-col items-center justify-center p-4 bg-white dark:bg-gray-800 min-h-[800px] overflow-auto">
+                <div className="text-center mb-6">
+                  <h3 className="text-xl font-medium mb-2">Looking for the textbook PDF?</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Click the button below to open the PDF in a new tab.
+                  </p>
+                  <Button 
+                    variant="default" 
+                    size="lg" 
+                    className="mx-auto"
+                    onClick={() => window.open('/linear-algebra-book.pdf', '_blank')}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Open Textbook PDF
+                  </Button>
+                </div>
                 <iframe 
                   src="/linear-algebra-book.pdf" 
-                  className="w-full h-[800px] border-none shadow-md"
+                  className="w-full h-[700px] border-none shadow-md mt-4"
                   title="Linear Algebra Textbook"
                 />
               </div>
