@@ -25,8 +25,8 @@ export interface ProblemSet {
 
 export const problemSets: ProblemSet[] = [
   {
-    id: "problem-set-1",
-    title: "Problem Set 1",
+    id: "unit-1",
+    title: "Unit 1",
     topics: [
       {
         session: "1",
@@ -97,8 +97,8 @@ export const problemSets: ProblemSet[] = [
     ],
   },
   {
-    id: "problem-set-2",
-    title: "Problem Set 2",
+    id: "unit-2",
+    title: "Unit 2",
     topics: [
       {
         session: "4",
@@ -154,8 +154,8 @@ export const problemSets: ProblemSet[] = [
     ],
   },
   {
-    id: "problem-set-3",
-    title: "Problem Set 3",
+    id: "unit-3",
+    title: "Unit 3",
     topics: [
       {
         session: "7",
@@ -206,8 +206,8 @@ export const problemSets: ProblemSet[] = [
     ],
   },
   {
-    id: "problem-set-4",
-    title: "Problem Set 4",
+    id: "unit-4",
+    title: "Unit 4",
     topics: [
       {
         session: "10",
@@ -244,8 +244,8 @@ export const problemSets: ProblemSet[] = [
     ],
   },
   {
-    id: "problem-set-5",
-    title: "Problem Set 5",
+    id: "unit-5",
+    title: "Unit 5",
     topics: [
       {
         session: "13",
@@ -296,8 +296,8 @@ export const problemSets: ProblemSet[] = [
     ],
   },
   {
-    id: "problem-set-6",
-    title: "Problem Set 6",
+    id: "unit-6",
+    title: "Unit 6",
     topics: [
       {
         session: "16",
@@ -348,8 +348,8 @@ export const problemSets: ProblemSet[] = [
     ],
   },
   {
-    id: "problem-set-7",
-    title: "Problem Set 7",
+    id: "unit-7",
+    title: "Unit 7",
     topics: [
       {
         session: "19",
@@ -414,8 +414,8 @@ export const problemSets: ProblemSet[] = [
     ],
   },
   {
-    id: "problem-set-8",
-    title: "Problem Set 8",
+    id: "unit-8",
+    title: "Unit 8",
     topics: [
       {
         session: "23",
@@ -466,8 +466,8 @@ export const problemSets: ProblemSet[] = [
     ],
   },
   {
-    id: "problem-set-9",
-    title: "Problem Set 9",
+    id: "unit-9",
+    title: "Unit 9",
     topics: [
       {
         session: "28",
@@ -528,8 +528,8 @@ export const problemSets: ProblemSet[] = [
     ],
   },
   {
-    id: "problem-set-10",
-    title: "Problem Set 10",
+    id: "unit-10",
+    title: "Unit 10",
     topics: [
       {
         session: "30",

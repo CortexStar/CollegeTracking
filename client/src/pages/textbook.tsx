@@ -40,16 +40,16 @@ export default function TextbookPage() {
           <Card className="border border-gray-200 dark:border-gray-700">
             <CardContent className="p-0">
               {/* PDF Viewer Controls - Simplified */}
-              <div className="flex items-center justify-end p-2.5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+              <div className="flex items-center justify-end p-1 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                 <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => window.open('/linear-algebra-book.pdf', '_blank')}
                     aria-label="Full PDF"
-                    className="flex items-center gap-1"
+                    className="flex items-center gap-1 h-7 text-xs"
                   >
-                    <FileText className="h-3.5 w-3.5" />
+                    <FileText className="h-3 w-3" />
                     Full PDF
                   </Button>
                   
@@ -58,9 +58,9 @@ export default function TextbookPage() {
                     size="sm"
                     onClick={() => window.print()}
                     aria-label="Print"
-                    className="flex items-center gap-1"
+                    className="flex items-center gap-1 h-7 text-xs"
                   >
-                    <FileText className="h-3.5 w-3.5" />
+                    <FileText className="h-3 w-3" />
                     Print
                   </Button>
                 </div>
@@ -78,12 +78,12 @@ export default function TextbookPage() {
                   />
                 </div>
               </div>
+              {/* Copyright notice moved inside card */}
+              <div className="text-center py-1 text-gray-500 dark:text-gray-400 text-xs border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                <p>© Gilbert Strang. Used with permission.</p>
+              </div>
             </CardContent>
           </Card>
-          
-          <div className="text-center mt-2 text-gray-500 dark:text-gray-400 text-xs">
-            <p>© Gilbert Strang. Used with permission.</p>
-          </div>
         </div>
       </div>
       <Footer />

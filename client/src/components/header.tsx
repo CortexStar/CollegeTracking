@@ -25,27 +25,17 @@ export default function Header() {
               COURSE CHARTS
             </Link>
             <div className="hidden md:flex space-x-3">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex items-center gap-1 h-9">
-                    Linear Algebra - MIT
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56">
-                  <DropdownMenuItem asChild>
-                    <Link href="/">
-                      Linear Algebra - MIT
-                    </Link>
-                  </DropdownMenuItem>
-                  {/* More courses can be added here in the future */}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button variant="outline" size="sm" className="flex items-center gap-1 h-9" asChild>
+                <Link href="/">
+                  Linear Algebra - MIT
+                </Link>
+              </Button>
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="flex items-center gap-1 h-9">
                     <Book className="h-4 w-4" />
-                    Textbook
+                    Introduction to Linear Algebra
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56">
