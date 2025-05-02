@@ -8,76 +8,34 @@ import Header from "@/components/header";
 import Footer from "@/components/footer";
 import TextbookToc from "@/components/textbook-toc";
 
-// We'll dynamically import react-pdf to avoid SSR issues
-import { Document, Page } from 'react-pdf';
-import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
-import 'react-pdf/dist/esm/Page/TextLayer.css';
-
-import { pdfjs } from 'react-pdf';
-
-// Set worker path for PDF.js
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
-
 export default function TextbookPage() {
-  const [numPages, setNumPages] = useState<number | null>(null);
-  const [pageNumber, setPageNumber] = useState<number>(1);
-  const [scale, setScale] = useState<number>(1.2);
-  const [rotation, setRotation] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const totalPages = 575; // Approximate from the PDF
 
-  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
-    setNumPages(numPages);
-    setIsLoading(false);
-  }
-
-  function changePage(offset: number) {
-    if (!numPages) return;
-    const newPageNumber = pageNumber + offset;
-    if (newPageNumber >= 1 && newPageNumber <= numPages) {
-      setPageNumber(newPageNumber);
+  function goToPage(page: number) {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      // For iframe we can't directly control the page
+      // This would be used with the TOC
     }
   }
-
-  function changeScale(newScale: number) {
-    if (newScale >= 0.5 && newScale <= 2.5) {
-      setScale(newScale);
-    }
-  }
-
-  function rotateDocument() {
-    setRotation((rotation + 90) % 360);
-  }
-
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight') {
-        changePage(1);
-      } else if (e.key === 'ArrowLeft') {
-        changePage(-1);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [pageNumber, numPages]);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header />
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
-        <div className="max-w-6xl mx-auto mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-grow">
+        <div className="max-w-6xl mx-auto mb-10">
+          <div className="flex items-center justify-between mb-8">
+            <div className="max-w-3xl">
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100">
                 Introduction to Linear Algebra
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 text-lg mt-2">
+              <p className="text-gray-600 dark:text-gray-400 text-lg mt-3">
                 Fourth Edition • Gilbert Strang
               </p>
             </div>
             <div>
-              <TextbookToc onSelectPage={setPageNumber} />
+              <TextbookToc onSelectPage={goToPage} />
             </div>
           </div>
 
@@ -86,96 +44,32 @@ export default function TextbookPage() {
               {/* PDF Viewer Controls */}
               <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => changePage(-1)}
-                    disabled={pageNumber <= 1}
-                    aria-label="Previous page"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  
-                  <div className="flex items-center">
-                    <span className="text-sm font-medium mr-2">
-                      Page {pageNumber} of {numPages || '...'}
-                    </span>
-                  </div>
-                  
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => changePage(1)}
-                    disabled={numPages === null || pageNumber >= numPages}
-                    aria-label="Next page"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+                  <span className="text-sm font-medium">
+                    Use the browser's PDF viewer controls for navigation
+                  </span>
                 </div>
                 
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
-                    size="icon"
-                    onClick={() => changeScale(scale - 0.1)}
-                    disabled={scale <= 0.5}
-                    aria-label="Zoom out"
+                    size="sm"
+                    onClick={() => window.print()}
+                    aria-label="Print"
+                    className="flex items-center gap-1"
                   >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  
-                  <div className="w-28">
-                    <Slider
-                      value={[scale]}
-                      min={0.5}
-                      max={2.5}
-                      step={0.1}
-                      onValueChange={(value) => setScale(value[0])}
-                    />
-                  </div>
-                  
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => changeScale(scale + 0.1)}
-                    disabled={scale >= 2.5}
-                    aria-label="Zoom in"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                  
-                  <Separator orientation="vertical" className="h-6" />
-                  
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={rotateDocument}
-                    aria-label="Rotate document"
-                  >
-                    <RotateCw className="h-4 w-4" />
+                    <FileText className="h-4 w-4" />
+                    Print
                   </Button>
                 </div>
               </div>
 
               {/* PDF Document */}
               <div className="flex justify-center p-4 bg-white dark:bg-gray-800 min-h-[800px] overflow-auto">
-                {isLoading && <div className="flex items-center justify-center h-full">Loading document...</div>}
-                <Document
-                  file="/linear-algebra-book.pdf"
-                  onLoadSuccess={onDocumentLoadSuccess}
-                  onLoadError={(error) => console.error('Error loading PDF:', error)}
-                  loading={<div className="flex items-center justify-center h-full">Loading document...</div>}
-                  error={<div className="text-red-500">Failed to load document. Please try again later.</div>}
-                >
-                  <Page
-                    pageNumber={pageNumber}
-                    scale={scale}
-                    rotate={rotation}
-                    renderTextLayer={true}
-                    renderAnnotationLayer={true}
-                    className="shadow-md"
-                  />
-                </Document>
+                <iframe 
+                  src="/linear-algebra-book.pdf" 
+                  className="w-full h-[800px] border-none shadow-md"
+                  title="Linear Algebra Textbook"
+                />
               </div>
             </CardContent>
           </Card>

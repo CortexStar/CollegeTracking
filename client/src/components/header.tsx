@@ -21,13 +21,13 @@ export default function Header() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
-            <h1 className="text-xl font-bold text-mit-red dark:text-mit-red-dark sm:text-2xl mr-6">
+            <h1 className="text-2xl font-bold text-mit-red dark:text-mit-red-dark sm:text-3xl mr-8">
               COURSE CHARTS
             </h1>
-            <div className="hidden md:flex space-x-4">
+            <div className="hidden md:flex space-x-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" className="flex items-center gap-1 h-9">
                     Linear Algebra - MIT
                     <ChevronDown className="h-4 w-4" />
                   </Button>
@@ -42,7 +42,7 @@ export default function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
               
-              <Button variant="outline" className="flex items-center gap-2" asChild>
+              <Button variant="outline" size="sm" className="flex items-center gap-1 h-9" asChild>
                 <Link href="/textbook">
                   <Book className="h-4 w-4" />
                   Textbook

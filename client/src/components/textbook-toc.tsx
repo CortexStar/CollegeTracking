@@ -136,15 +136,21 @@ const tableOfContents: Chapter[] = [
 ];
 
 interface TextbookTocProps {
-  onSelectPage: (page: number) => void;
+  onSelectPage?: (page: number) => void;
 }
 
 export default function TextbookToc({ onSelectPage }: TextbookTocProps) {
   const [open, setOpen] = useState(false);
   
   const handleSelectSection = (page: number) => {
-    onSelectPage(page);
+    if (onSelectPage) {
+      onSelectPage(page);
+    }
     setOpen(false);
+    
+    // Open the PDF at that page in a new tab as a fallback
+    // Note: This is a limited solution as most PDF viewers don't support page parameters in URLs
+    window.open(`/linear-algebra-book.pdf#page=${page}`, '_blank');
   };
 
   return (
