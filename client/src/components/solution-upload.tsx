@@ -77,9 +77,9 @@ export default function SolutionUpload({ problemSetId, sectionId }: SolutionUplo
       {solution ? (
         <div className="flex items-center justify-end gap-1">
           <Button 
-            variant="outline" 
+            variant="ghost" 
             size="sm" 
-            className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 px-3 py-1 h-8 border-blue-200 dark:border-blue-800"
+            className="flex items-center gap-1 text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white px-3 py-1 h-8"
             onClick={() => window.open(solution.fileUrl, '_blank')}
           >
             <FileText className="h-4 w-4" />
@@ -104,9 +104,9 @@ export default function SolutionUpload({ problemSetId, sectionId }: SolutionUplo
         </div>
       ) : (
         <Button 
-          variant="outline" 
+          variant="ghost" 
           size="sm" 
-          className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 px-3 py-1 h-8 border-blue-200 dark:border-blue-800"
+          className="flex items-center gap-1 text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white px-3 py-1 h-8"
           onClick={() => setIsDialogOpen(true)}
         >
           <FileUp className="h-4 w-4" />

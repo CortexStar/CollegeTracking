@@ -135,10 +135,13 @@ export default function ProblemSet({ problemSet, isActive, isCompleted = false, 
           {/* Assigned Problems */}
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100">
+              <div className="w-24">
+                {/* Empty space for balance */}
+              </div>
+              <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 text-center flex-1">
                 Assigned Problems
               </h3>
-              <div className="flex-shrink-0">
+              <div className="w-24 flex justify-end">
                 <SolutionUpload 
                   problemSetId={problemSet.id} 
                   sectionId={problemSet.id} 
