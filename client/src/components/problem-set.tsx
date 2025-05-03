@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, CheckCircle } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useMobile } from "@/hooks/use-mobile";
 import { ProblemSet as ProblemSetType } from "@/data/problem-sets";
@@ -22,9 +23,11 @@ import { ProblemSet as ProblemSetType } from "@/data/problem-sets";
 interface ProblemSetProps {
   problemSet: ProblemSetType;
   isActive: boolean;
+  isCompleted?: boolean;
+  onToggleCompletion?: () => void;
 }
 
-export default function ProblemSet({ problemSet, isActive }: ProblemSetProps) {
+export default function ProblemSet({ problemSet, isActive, isCompleted = false, onToggleCompletion }: ProblemSetProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const isMobile = useMobile();
 

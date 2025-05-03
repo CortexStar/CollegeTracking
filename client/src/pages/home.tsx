@@ -4,6 +4,8 @@ import { ChevronUp } from "lucide-react";
 import ProblemSet from "@/components/problem-set";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
+import { ProgressCircle } from "@/components/progress-circle";
+import { useProgress } from "@/hooks/use-progress";
 import { problemSets } from "@/data/problem-sets";
 
 export default function Home() {
@@ -13,6 +15,7 @@ export default function Home() {
     hash || "problem-set-1"
   );
   const [showScrollToTop, setShowScrollToTop] = useState(false);
+  const { toggleUnitCompletion, isUnitCompleted, calculateProgress } = useProgress();
 
   // Update active problem set when URL hash changes
   useEffect(() => {
@@ -46,13 +49,25 @@ export default function Home() {
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-grow">
         <div className="max-w-6xl mx-auto">
-          <div className="mb-10 text-left">
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-              Linear Algebra — MIT
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 text-lg">
-              A comprehensive guide for MIT's 18.06 Linear Algebra course
-            </p>
+          <div className="mb-10 flex flex-row items-start justify-between">
+            <div className="text-left">
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+                Linear Algebra — MIT
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 text-lg">
+                A comprehensive guide for MIT's 18.06 Linear Algebra course
+              </p>
+            </div>
+            <div className="flex flex-col items-center">
+              <ProgressCircle 
+                progress={calculateProgress(problemSets.length)} 
+                size="md"
+                className="mb-2"
+              />
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Course Progress
+              </p>
+            </div>
           </div>
           
           {problemSets.map((problemSet) => (
@@ -60,6 +75,8 @@ export default function Home() {
               key={problemSet.id}
               problemSet={problemSet}
               isActive={activeProblemSet === problemSet.id}
+              isCompleted={isUnitCompleted(problemSet.id)}
+              onToggleCompletion={() => toggleUnitCompletion(problemSet.id)}
             />
           ))}
 
