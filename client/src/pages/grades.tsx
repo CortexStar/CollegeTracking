@@ -95,6 +95,12 @@ export default function GradesPage() {
   const [newCourseData, setNewCourseData] = useState("");
   const [editingSemesterId, setEditingSemesterId] = useState<string | null>(null);
   const [editedSemesterName, setEditedSemesterName] = useState("");
+  const [editingCourse, setEditingCourse] = useState<{
+    semesterId: string;
+    courseIndex: number;
+    field: 'id' | 'title' | 'grade' | 'credits';
+    value: string;
+  } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   
@@ -144,8 +150,12 @@ export default function GradesPage() {
         
         // Start new course
         const parts = line.split(' - ');
+        // Remove numbers in parentheses from course ID
+        let courseId = parts[0].trim();
+        courseId = courseId.replace(/\(\d+\)/g, '').trim();
+        
         currentCourse = {
-          id: parts[0].trim(),
+          id: courseId,
           title: parts.length > 1 ? parts[1].trim() : '',
         };
       } 
@@ -336,6 +346,99 @@ export default function GradesPage() {
       description: "Semester name updated",
     });
   };
+  
+  // Start editing course field
+  const startEditingCourse = (semesterId: string, courseIndex: number, field: 'id' | 'title' | 'grade' | 'credits', value: string) => {
+    // Don't trigger accordion when double-clicking
+    const event = window.event;
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+    
+    setEditingCourse({
+      semesterId,
+      courseIndex,
+      field,
+      value: field === 'credits' ? value.toString() : value
+    });
+    
+    // Focus the input after it renders
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+        inputRef.current.select();
+      }
+    }, 50);
+  };
+  
+  // Save edited course field
+  const saveEditedCourse = () => {
+    if (!editingCourse) return;
+    
+    const { semesterId, courseIndex, field, value } = editingCourse;
+    
+    if (!value.trim() && field !== 'credits') {
+      setEditingCourse(null);
+      return;
+    }
+    
+    setSemesters(prev => 
+      prev.map(semester => {
+        if (semester.id === semesterId) {
+          const updatedCourses = [...semester.courses];
+          
+          // Validate and update the course field
+          if (field === 'credits') {
+            const numValue = parseFloat(value);
+            if (!isNaN(numValue) && numValue > 0) {
+              updatedCourses[courseIndex] = {
+                ...updatedCourses[courseIndex],
+                [field]: numValue
+              };
+            }
+          } else if (field === 'grade') {
+            // Only accept valid grades
+            if (Object.keys(gradePointValues).includes(value.toUpperCase())) {
+              const gradePointValue = gradePointValues[value.toUpperCase()];
+              updatedCourses[courseIndex] = {
+                ...updatedCourses[courseIndex],
+                [field]: value.toUpperCase(),
+                gradePoints: gradePointValue
+              };
+            }
+          } else {
+            updatedCourses[courseIndex] = {
+              ...updatedCourses[courseIndex],
+              [field]: value.trim()
+            };
+          }
+          
+          // Recalculate semester totals
+          const totalCredits = updatedCourses.reduce((sum, course) => sum + course.credits, 0);
+          const totalGradePoints = updatedCourses.reduce((sum, course) => 
+            sum + (course.credits * course.gradePoints), 0);
+          const gpa = totalCredits > 0 ? parseFloat((totalGradePoints / totalCredits).toFixed(2)) : 0;
+          
+          return {
+            ...semester,
+            courses: updatedCourses,
+            totalCredits,
+            totalGradePoints,
+            gpa
+          };
+        }
+        return semester;
+      })
+    );
+    
+    setEditingCourse(null);
+    
+    toast({
+      title: "Success",
+      description: "Course information updated",
+    });
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -365,11 +468,11 @@ export default function GradesPage() {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle className="text-2xl font-bold">Semesters</CardTitle>
+                    <CardTitle className="text-3xl font-bold">Semesters</CardTitle>
                   </div>
                   <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button>Add Semester</Button>
+                      <Button size="sm">Add Semester</Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[625px]">
                       <DialogHeader>
@@ -489,10 +592,161 @@ export default function GradesPage() {
                                   <TableBody>
                                     {semester.courses.map((course, i) => (
                                       <TableRow key={i}>
-                                        <TableCell className="font-medium">{course.id}</TableCell>
-                                        <TableCell>{course.title}</TableCell>
-                                        <TableCell className="text-center">{course.grade}</TableCell>
-                                        <TableCell className="text-center">{course.credits.toFixed(1)}</TableCell>
+                                        <TableCell className="font-medium">
+                                          {editingCourse && 
+                                           editingCourse.semesterId === semester.id && 
+                                           editingCourse.courseIndex === i && 
+                                           editingCourse.field === 'id' ? (
+                                            <form 
+                                              onSubmit={(e) => {
+                                                e.preventDefault();
+                                                saveEditedCourse();
+                                              }}
+                                              onClick={(e) => e.stopPropagation()}
+                                              className="flex"
+                                            >
+                                              <Input
+                                                ref={inputRef}
+                                                className="h-8 border-0 shadow-none bg-transparent p-0 focus-visible:ring-0"
+                                                value={editingCourse.value}
+                                                onChange={(e) => setEditingCourse({...editingCourse, value: e.target.value})}
+                                                onBlur={saveEditedCourse}
+                                                onKeyDown={(e) => {
+                                                  if (e.key === "Escape") {
+                                                    setEditingCourse(null);
+                                                  }
+                                                }}
+                                              />
+                                            </form>
+                                          ) : (
+                                            <span 
+                                              onDoubleClick={(e) => {
+                                                e.stopPropagation();
+                                                startEditingCourse(semester.id, i, 'id', course.id);
+                                              }}
+                                              className="cursor-pointer block"
+                                            >
+                                              {course.id}
+                                            </span>
+                                          )}
+                                        </TableCell>
+                                        <TableCell>
+                                          {editingCourse && 
+                                           editingCourse.semesterId === semester.id && 
+                                           editingCourse.courseIndex === i && 
+                                           editingCourse.field === 'title' ? (
+                                            <form 
+                                              onSubmit={(e) => {
+                                                e.preventDefault();
+                                                saveEditedCourse();
+                                              }}
+                                              onClick={(e) => e.stopPropagation()}
+                                              className="flex"
+                                            >
+                                              <Input
+                                                ref={inputRef}
+                                                className="h-8 border-0 shadow-none bg-transparent p-0 focus-visible:ring-0"
+                                                value={editingCourse.value}
+                                                onChange={(e) => setEditingCourse({...editingCourse, value: e.target.value})}
+                                                onBlur={saveEditedCourse}
+                                                onKeyDown={(e) => {
+                                                  if (e.key === "Escape") {
+                                                    setEditingCourse(null);
+                                                  }
+                                                }}
+                                              />
+                                            </form>
+                                          ) : (
+                                            <span 
+                                              onDoubleClick={(e) => {
+                                                e.stopPropagation();
+                                                startEditingCourse(semester.id, i, 'title', course.title);
+                                              }}
+                                              className="cursor-pointer block"
+                                            >
+                                              {course.title}
+                                            </span>
+                                          )}
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                          {editingCourse && 
+                                           editingCourse.semesterId === semester.id && 
+                                           editingCourse.courseIndex === i && 
+                                           editingCourse.field === 'grade' ? (
+                                            <form 
+                                              onSubmit={(e) => {
+                                                e.preventDefault();
+                                                saveEditedCourse();
+                                              }}
+                                              onClick={(e) => e.stopPropagation()}
+                                              className="flex justify-center"
+                                            >
+                                              <Input
+                                                ref={inputRef}
+                                                className="h-8 border-0 shadow-none bg-transparent p-0 focus-visible:ring-0 w-12 text-center"
+                                                value={editingCourse.value}
+                                                onChange={(e) => setEditingCourse({...editingCourse, value: e.target.value})}
+                                                onBlur={saveEditedCourse}
+                                                onKeyDown={(e) => {
+                                                  if (e.key === "Escape") {
+                                                    setEditingCourse(null);
+                                                  }
+                                                }}
+                                              />
+                                            </form>
+                                          ) : (
+                                            <span 
+                                              onDoubleClick={(e) => {
+                                                e.stopPropagation();
+                                                startEditingCourse(semester.id, i, 'grade', course.grade);
+                                              }}
+                                              className="cursor-pointer block"
+                                            >
+                                              {course.grade}
+                                            </span>
+                                          )}
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                          {editingCourse && 
+                                           editingCourse.semesterId === semester.id && 
+                                           editingCourse.courseIndex === i && 
+                                           editingCourse.field === 'credits' ? (
+                                            <form 
+                                              onSubmit={(e) => {
+                                                e.preventDefault();
+                                                saveEditedCourse();
+                                              }}
+                                              onClick={(e) => e.stopPropagation()}
+                                              className="flex justify-center"
+                                            >
+                                              <Input
+                                                ref={inputRef}
+                                                type="number"
+                                                step="0.1"
+                                                min="0.1"
+                                                className="h-8 border-0 shadow-none bg-transparent p-0 focus-visible:ring-0 w-12 text-center"
+                                                value={editingCourse.value}
+                                                onChange={(e) => setEditingCourse({...editingCourse, value: e.target.value})}
+                                                onBlur={saveEditedCourse}
+                                                onKeyDown={(e) => {
+                                                  if (e.key === "Escape") {
+                                                    setEditingCourse(null);
+                                                  }
+                                                }}
+                                              />
+                                            </form>
+                                          ) : (
+                                            <span 
+                                              onDoubleClick={(e) => {
+                                                e.stopPropagation();
+                                                startEditingCourse(semester.id, i, 'credits', course.credits.toFixed(1));
+                                              }}
+                                              className="cursor-pointer block"
+                                            >
+                                              {course.credits.toFixed(1)}
+                                            </span>
+                                          )}
+                                        </TableCell>
                                         <TableCell className="text-center">
                                           {(course.credits * course.gradePoints).toFixed(2)}
                                         </TableCell>
