@@ -15,7 +15,8 @@ import {
   DialogFooter,
   DialogClose
 } from "@/components/ui/dialog";
-import { Solution, useSolutions } from "@/hooks/use-solutions";
+import { Solution } from "@/hooks/use-solutions";
+import { useSolutionsContext } from "@/components/solutions-provider";
 
 interface SolutionUploadProps {
   problemSetId: string;
@@ -23,7 +24,7 @@ interface SolutionUploadProps {
 }
 
 export default function SolutionUpload({ problemSetId, sectionId }: SolutionUploadProps) {
-  const { getSolution, addSolution, removeSolution } = useSolutions();
+  const { getSolution, addSolution, removeSolution } = useSolutionsContext();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [solution, setSolution] = useState<Solution | undefined>(
