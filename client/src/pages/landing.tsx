@@ -44,17 +44,15 @@ export default function Landing() {
       <Header />
       
       <ContextMenu>
-        <ContextMenuTrigger>
-          <main 
-            className="flex-grow flex items-center justify-center" 
+        <ContextMenuTrigger className="flex-grow">
+          <div 
+            className="w-full h-full min-h-[calc(100vh-132px)]" 
             style={backgroundImage ? {
               backgroundImage: `url(${backgroundImage})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center'
             } : {}}
-          >
-            {/* Empty main container, right-click anywhere to upload an image */}
-          </main>
+          />
         </ContextMenuTrigger>
         <ContextMenuContent>
           <ContextMenuItem>
