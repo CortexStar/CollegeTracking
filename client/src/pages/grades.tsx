@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -92,6 +92,9 @@ export default function GradesPage() {
   const [isAddCourseDialogOpen, setIsAddCourseDialogOpen] = useState(false);
   const [currentSemesterId, setCurrentSemesterId] = useState<string | null>(null);
   const [newCourseData, setNewCourseData] = useState("");
+  const [editingSemesterId, setEditingSemesterId] = useState<string | null>(null);
+  const [editedSemesterName, setEditedSemesterName] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   
   // Calculate overall GPA and credits
@@ -298,6 +301,40 @@ export default function GradesPage() {
   const getSemesterById = (id: string) => {
     return semesters.find(sem => sem.id === id);
   };
+  
+  // Start editing semester name
+  const startEditingSemesterName = (id: string, name: string) => {
+    setEditingSemesterId(id);
+    setEditedSemesterName(name);
+    // Focus the input after it renders
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+        inputRef.current.select();
+      }
+    }, 50);
+  };
+  
+  // Save edited semester name
+  const saveEditedSemesterName = () => {
+    if (!editingSemesterId || !editedSemesterName.trim()) return;
+    
+    setSemesters(prev => 
+      prev.map(semester => 
+        semester.id === editingSemesterId 
+          ? { ...semester, name: editedSemesterName.trim() } 
+          : semester
+      )
+    );
+    
+    setEditingSemesterId(null);
+    setEditedSemesterName("");
+    
+    toast({
+      title: "Success",
+      description: "Semester name updated",
+    });
+  };
 
   return (
     <div className="container mx-auto py-16 max-w-5xl">
@@ -325,7 +362,6 @@ export default function GradesPage() {
             <div className="flex justify-between items-center">
               <div>
                 <CardTitle className="text-2xl font-bold">Semesters</CardTitle>
-                <CardDescription>Your academic terms and courses</CardDescription>
               </div>
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
@@ -388,7 +424,37 @@ export default function GradesPage() {
                       <div className="flex items-center justify-between w-full pr-4">
                         <div className="flex items-center">
                           <CheckCircle className="h-5 w-5 mr-3 text-green-500 flex-shrink-0" />
-                          <span className="text-xl font-medium">{semester.name}</span>
+                          {editingSemesterId === semester.id ? (
+                            <form 
+                              onSubmit={(e) => {
+                                e.preventDefault();
+                                saveEditedSemesterName();
+                              }}
+                              className="flex"
+                            >
+                              <Input
+                                ref={inputRef}
+                                className="text-xl font-medium h-8 min-w-[200px]"
+                                value={editedSemesterName}
+                                onChange={(e) => setEditedSemesterName(e.target.value)}
+                                onBlur={saveEditedSemesterName}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Escape") {
+                                    setEditingSemesterId(null);
+                                    setEditedSemesterName("");
+                                  }
+                                }}
+                              />
+                            </form>
+                          ) : (
+                            <span 
+                              className="text-xl font-medium cursor-pointer" 
+                              onDoubleClick={() => startEditingSemesterName(semester.id, semester.name)}
+                              title="Double-click to edit"
+                            >
+                              {semester.name}
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-8">
                           <div className="text-right">
@@ -429,7 +495,7 @@ export default function GradesPage() {
                                   </TableRow>
                                 ))}
                                 <TableRow className="bg-gray-50 dark:bg-gray-800 font-semibold">
-                                  <TableCell colSpan={3} className="text-right">Semester Totals:</TableCell>
+                                  <TableCell colSpan={3} className="pl-8">Semester Totals:</TableCell>
                                   <TableCell className="text-center">{semester.totalCredits.toFixed(1)}</TableCell>
                                   <TableCell className="text-center">{semester.totalGradePoints.toFixed(2)}</TableCell>
                                 </TableRow>
@@ -468,7 +534,6 @@ export default function GradesPage() {
               <CollapsibleTrigger className="flex justify-between items-center w-full">
                 <div>
                   <CardTitle>Grade Values Reference</CardTitle>
-                  <CardDescription>Standard grade point values used in calculations</CardDescription>
                 </div>
                 <ChevronDown className="h-4 w-4" />
               </CollapsibleTrigger>
