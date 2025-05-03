@@ -7,7 +7,6 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="mb-4 md:mb-0">
             <h2 className="text-lg font-semibold">COURSE CHARTS</h2>
-            <p className="text-gray-400 text-sm">MIT Linear Algebra</p>
           </div>
           <div className="flex space-x-6">
             <a

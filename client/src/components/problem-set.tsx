@@ -19,6 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useMobile } from "@/hooks/use-mobile";
 import { ProblemSet as ProblemSetType } from "@/data/problem-sets";
+import SolutionUpload from "@/components/solution-upload";
 
 interface ProblemSetProps {
   problemSet: ProblemSetType;
@@ -143,6 +144,7 @@ export default function ProblemSet({ problemSet, isActive, isCompleted = false, 
                     <TableHead className="w-20 text-sm uppercase text-center">Section</TableHead>
                     <TableHead className="text-sm uppercase">Problems</TableHead>
                     <TableHead className="w-16 text-sm uppercase text-center">Page</TableHead>
+                    <TableHead className="w-24 text-sm uppercase text-center">Solution</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -151,6 +153,12 @@ export default function ProblemSet({ problemSet, isActive, isCompleted = false, 
                       <TableCell className="whitespace-nowrap text-base text-center">{problem.section}</TableCell>
                       <TableCell className="text-base">{problem.problems}</TableCell>
                       <TableCell className="whitespace-nowrap text-base text-gray-500 dark:text-gray-400 text-center">{problem.page}</TableCell>
+                      <TableCell className="text-center">
+                        <SolutionUpload 
+                          problemSetId={problemSet.id} 
+                          sectionId={problem.section} 
+                        />
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

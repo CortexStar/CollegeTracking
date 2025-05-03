@@ -13,6 +13,10 @@ export interface AssignedProblem {
   section: string;
   problems: string;
   page: string;
+  solution?: {
+    fileName: string;
+    fileUrl: string;
+  };
 }
 
 export interface ProblemSet {
