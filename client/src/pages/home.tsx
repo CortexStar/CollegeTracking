@@ -52,10 +52,10 @@ export default function Home() {
           <div className="mb-10 flex flex-row items-start justify-between">
             <div className="text-left">
               <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-                Linear Algebra — MIT
+                Linear Algebra - MIT
               </h1>
               <p className="text-gray-600 dark:text-gray-400 text-lg">
-                A comprehensive guide for MIT's 18.06 Linear Algebra course
+                Course Structure Guide for "Linear Algebra - MIT"
               </p>
             </div>
             <div className="flex flex-col items-center">
