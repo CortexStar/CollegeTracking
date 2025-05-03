@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { FileUp, FileText, MoreVertical } from "lucide-react";
+import { FileUp, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger
+} from "@/components/ui/context-menu";
 import { 
   Dialog, 
   DialogContent, 
@@ -75,42 +75,36 @@ export default function SolutionUpload({ problemSetId, sectionId }: SolutionUplo
   return (
     <>
       {solution ? (
-        <div className="flex items-center justify-end gap-1">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="flex items-center gap-1 text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white px-3 py-1 h-8"
-            onClick={() => window.open(solution.fileUrl, '_blank')}
-          >
-            <FileText className="h-4 w-4" />
-            <span className="text-sm font-medium">Solution</span>
-          </Button>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 p-1">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem onClick={() => setIsDialogOpen(true)}>
-                Change File
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleDelete}>
-                Remove Solution
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <ContextMenu>
+          <ContextMenuTrigger>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="flex items-center gap-1 text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white px-2 py-0.5 h-7"
+              onClick={() => window.open(solution.fileUrl, '_blank')}
+            >
+              <FileText className="h-3.5 w-3.5" />
+              <span className="text-xs font-medium">Solution</span>
+            </Button>
+          </ContextMenuTrigger>
+          <ContextMenuContent className="w-40">
+            <ContextMenuItem onClick={() => setIsDialogOpen(true)}>
+              Change File
+            </ContextMenuItem>
+            <ContextMenuItem onClick={handleDelete}>
+              Remove Solution
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
       ) : (
         <Button 
           variant="ghost" 
           size="sm" 
-          className="flex items-center gap-1 text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white px-3 py-1 h-8"
+          className="flex items-center gap-1 text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white px-2 py-0.5 h-7"
           onClick={() => setIsDialogOpen(true)}
         >
-          <FileUp className="h-4 w-4" />
-          <span className="text-sm font-medium">Solution</span>
+          <FileUp className="h-3.5 w-3.5" />
+          <span className="text-xs font-medium">Solution</span>
         </Button>
       )}
 
