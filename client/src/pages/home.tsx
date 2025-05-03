@@ -44,21 +44,16 @@ export default function Home() {
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header />
       
-      <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 mb-8">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="max-w-6xl mx-auto">
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-grow">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-10 text-left">
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
               Linear Algebra — MIT
             </h1>
-            <p className="text-gray-600 dark:text-gray-400 text-lg mt-2">
+            <p className="text-gray-600 dark:text-gray-400 text-lg">
               A comprehensive guide for MIT's 18.06 Linear Algebra course
             </p>
           </div>
-        </div>
-      </div>
-      
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex-grow">
-        <div className="max-w-6xl mx-auto">
           
           {problemSets.map((problemSet) => (
             <ProblemSet 
