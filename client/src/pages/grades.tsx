@@ -537,11 +537,12 @@ export default function GradesPage() {
                                     e.preventDefault();
                                     saveEditedSemesterName();
                                   }}
+                                  onClick={(e) => e.stopPropagation()}
                                   className="flex"
                                 >
                                   <Input
                                     ref={inputRef}
-                                    className="text-xl font-medium h-8 min-w-[200px]"
+                                    className="text-xl font-medium h-8 min-w-[200px] border-0 shadow-none bg-transparent p-0 focus-visible:ring-0"
                                     value={editedSemesterName}
                                     onChange={(e) => setEditedSemesterName(e.target.value)}
                                     onBlur={saveEditedSemesterName}
@@ -556,7 +557,10 @@ export default function GradesPage() {
                               ) : (
                                 <span 
                                   className="text-xl font-medium cursor-pointer" 
-                                  onDoubleClick={() => startEditingSemesterName(semester.id, semester.name)}
+                                  onDoubleClick={(e) => {
+                                    e.stopPropagation();
+                                    startEditingSemesterName(semester.id, semester.name);
+                                  }}
                                   title="Double-click to edit"
                                 >
                                   {semester.name}
