@@ -34,6 +34,7 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
+  ContextMenuSeparator,
 } from "@/components/ui/context-menu";
 import { 
   Accordion, 
@@ -305,6 +306,33 @@ export default function GradesPage() {
     toast({
       title: "Semester removed",
       description: "The semester has been removed successfully",
+    });
+  };
+  
+  // Move semester up or down in the list
+  const moveSemester = (id: string, direction: 'up' | 'down') => {
+    setSemesters(prev => {
+      const index = prev.findIndex(semester => semester.id === id);
+      
+      // Check if move is possible
+      if ((direction === 'up' && index === 0) || 
+          (direction === 'down' && index === prev.length - 1)) {
+        return prev; // Already at the top/bottom
+      }
+      
+      const newSemesters = [...prev];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      
+      // Swap positions
+      [newSemesters[index], newSemesters[targetIndex]] = 
+      [newSemesters[targetIndex], newSemesters[index]];
+      
+      return newSemesters;
+    });
+    
+    toast({
+      title: "Success",
+      description: `Semester moved ${direction}`,
     });
   };
 
@@ -588,6 +616,19 @@ export default function GradesPage() {
                             </AccordionTrigger>
                           </ContextMenuTrigger>
                           <ContextMenuContent>
+                            <ContextMenuItem 
+                              onClick={() => moveSemester(semester.id, 'up')}
+                              disabled={semesters.indexOf(semester) === 0}
+                            >
+                              Move Up
+                            </ContextMenuItem>
+                            <ContextMenuItem 
+                              onClick={() => moveSemester(semester.id, 'down')}
+                              disabled={semesters.indexOf(semester) === semesters.length - 1}
+                            >
+                              Move Down
+                            </ContextMenuItem>
+                            <ContextMenuSeparator />
                             <ContextMenuItem 
                               onClick={() => removeSemester(semester.id)}
                               className="text-red-500 hover:text-red-600 focus:text-red-600"
