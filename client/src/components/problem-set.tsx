@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, CheckCircle } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -71,16 +71,7 @@ export default function ProblemSet({ problemSet, isActive, isCompleted = false, 
             />
           </div>
           
-          <button
-            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-            aria-label={isExpanded ? "Collapse" : "Expand"}
-          >
-            {isExpanded ? (
-              <ChevronUp className="h-6 w-6" />
-            ) : (
-              <ChevronDown className="h-6 w-6" />
-            )}
-          </button>
+
         </div>
       </CardHeader>
       
