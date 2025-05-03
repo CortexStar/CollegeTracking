@@ -1,4 +1,4 @@
-import { Sun, Moon, Book, ChevronDown, GraduationCap } from "lucide-react";
+import { Sun, Moon, Book, ChevronDown, GraduationCap, BarChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme-provider";
 import { Link } from "wouter";
@@ -56,6 +56,13 @@ export default function Header() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              
+              <Link href="/grades">
+                <Button variant="outline" size="sm" className="flex items-center gap-1 h-9">
+                  <BarChart className="h-4 w-4" />
+                  Grades & Forecasting
+                </Button>
+              </Link>
             </div>
           </div>
           <div className="flex items-center space-x-2">
