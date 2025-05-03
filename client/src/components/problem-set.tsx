@@ -42,21 +42,50 @@ export default function ProblemSet({ problemSet, isActive, isCompleted = false, 
     >
       <CardHeader 
         className="px-10 py-7 border-b border-gray-200 dark:border-gray-700 flex flex-row items-center justify-between cursor-pointer"
-        onClick={handleToggleExpand}
       >
-        <CardTitle className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-          {problemSet.title}
-        </CardTitle>
-        <button
-          className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-          aria-label={isExpanded ? "Collapse" : "Expand"}
+        <div
+          className="flex-1 flex items-center" 
+          onClick={handleToggleExpand}
         >
-          {isExpanded ? (
-            <ChevronUp className="h-6 w-6" />
-          ) : (
-            <ChevronDown className="h-6 w-6" />
+          {isCompleted && (
+            <CheckCircle className="h-5 w-5 mr-3 text-green-500 flex-shrink-0" />
           )}
-        </button>
+          <CardTitle className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+            {problemSet.title}
+          </CardTitle>
+        </div>
+        
+        <div className="flex items-center gap-5" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+              {isCompleted ? "Completed" : "Mark complete"}
+            </span>
+            <Switch 
+              checked={isCompleted}
+              onCheckedChange={(checked) => {
+                if (onToggleCompletion) {
+                  onToggleCompletion();
+                }
+              }}
+              aria-label={isCompleted ? "Mark as incomplete" : "Mark as complete"}
+            />
+          </div>
+          
+          <button
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            aria-label={isExpanded ? "Collapse" : "Expand"}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleToggleExpand();
+            }}
+          >
+            {isExpanded ? (
+              <ChevronUp className="h-6 w-6" />
+            ) : (
+              <ChevronDown className="h-6 w-6" />
+            )}
+          </button>
+        </div>
       </CardHeader>
       
       {isExpanded && (
