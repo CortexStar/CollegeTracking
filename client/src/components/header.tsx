@@ -1,6 +1,7 @@
 import { Sun, Moon, Book, ChevronDown, GraduationCap, BarChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme-provider";
+import { useCourseName } from "@/hooks/use-course-name";
 import { Link } from "wouter";
 import {
   DropdownMenu,
@@ -11,6 +12,7 @@ import {
 
 export default function Header() {
   const { theme, setTheme } = useTheme();
+  const { courseName } = useCourseName();
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
@@ -35,7 +37,7 @@ export default function Header() {
                 <DropdownMenuContent align="start" className="w-56">
                   <DropdownMenuItem asChild>
                     <Link href="/course">
-                      Linear Algebra - MIT
+                      {courseName}
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>

@@ -5,6 +5,7 @@ import ProblemSet from "@/components/problem-set";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { ProgressCircle } from "@/components/progress-circle";
+import CourseNameDisplay from "@/components/course-name-display";
 import { useProgress } from "@/hooks/use-progress";
 import { problemSets } from "@/data/problem-sets";
 
@@ -51,9 +52,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <div className="mb-10 flex flex-row items-start justify-between">
             <div className="text-left">
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-                Introduction to Linear Algebra
-              </h1>
+              <CourseNameDisplay />
               <p className="text-gray-600 dark:text-gray-400 text-lg">
                 Course Structure Guide for "Linear Algebra - MIT"
               </p>
