@@ -451,15 +451,15 @@ export default function GradesPage() {
               <div className="flex mb-8 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg justify-between items-center">
                 <div>
                   <h3 className="text-xl font-medium">Overall GPA</h3>
-                  <p className="text-4xl font-bold mt-2">{overallGPA.toFixed(2)}</p>
+                  <p className="text-4xl font-bold mt-2 min-w-[3.5ch] text-left">{overallGPA.toFixed(2)}</p>
                 </div>
                 <div>
                   <h3 className="text-xl font-medium">Total Credits</h3>
-                  <p className="text-4xl font-bold mt-2">{overallStats.totalCredits.toFixed(1)}</p>
+                  <p className="text-4xl font-bold mt-2 min-w-[3.5ch] text-left">{overallStats.totalCredits.toFixed(1)}</p>
                 </div>
                 <div>
                   <h3 className="text-xl font-medium">Semesters</h3>
-                  <p className="text-4xl font-bold mt-2">{semesters.length}</p>
+                  <p className="text-4xl font-bold mt-2 min-w-[3.5ch] text-left">{semesters.length}</p>
                 </div>
               </div>
             </div>
@@ -589,11 +589,11 @@ export default function GradesPage() {
                             <div className="flex items-center gap-8">
                               <div className="text-right">
                                 <span className="text-sm text-gray-500">GPA</span>
-                                <p className="font-semibold">{semester.gpa.toFixed(2)}</p>
+                                <p className="font-semibold min-w-[3ch] text-right">{semester.gpa.toFixed(2)}</p>
                               </div>
                               <div className="text-right">
                                 <span className="text-sm text-gray-500">Credits</span>
-                                <p className="font-semibold">{semester.totalCredits.toFixed(1)}</p>
+                                <p className="font-semibold min-w-[3ch] text-right">{semester.totalCredits.toFixed(1)}</p>
                               </div>
                             </div>
                           </div>
