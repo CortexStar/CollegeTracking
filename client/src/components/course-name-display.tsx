@@ -56,7 +56,7 @@ export default function CourseNameDisplay() {
             onChange={(e) => setEditedName(e.target.value)}
             onBlur={saveEditing}
             onKeyDown={handleKeyDown}
-            className="text-4xl font-bold h-auto py-2 mb-4 text-gray-900 dark:text-gray-100 bg-transparent border-0 border-b-2 rounded-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="text-4xl font-bold h-auto py-2 mb-4 text-gray-900 dark:text-gray-100 bg-transparent border-0 border-b-2 rounded-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 caret-current"
           />
           <button
             onClick={saveEditing}

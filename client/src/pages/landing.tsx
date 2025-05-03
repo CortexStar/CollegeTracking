@@ -53,11 +53,7 @@ export default function Landing() {
               backgroundPosition: 'center'
             } : {}}
           >
-            {!backgroundImage && (
-              <div className="text-gray-400 dark:text-gray-600 text-center p-10">
-                Right-click to upload an image
-              </div>
-            )}
+            {/* Empty main container, right-click anywhere to upload an image */}
           </main>
         </ContextMenuTrigger>
         <ContextMenuContent>
