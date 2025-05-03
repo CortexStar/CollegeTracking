@@ -58,7 +58,7 @@ export default function ProblemSet({ problemSet, isActive, isCompleted = false, 
         <div className="flex items-center gap-5" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-              {isCompleted ? "Completed" : "Mark complete"}
+              {isCompleted ? "Completed" : "In Progress"}
             </span>
             <Switch 
               checked={isCompleted}

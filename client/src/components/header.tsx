@@ -1,4 +1,4 @@
-import { Sun, Moon, Book, ChevronDown } from "lucide-react";
+import { Sun, Moon, Book, ChevronDown, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme-provider";
 import { Link } from "wouter";
@@ -25,11 +25,21 @@ export default function Header() {
               COURSE CHARTS
             </Link>
             <div className="hidden md:flex space-x-3">
-              <Button variant="outline" size="sm" className="flex items-center gap-1 h-9" asChild>
-                <Link href="/">
-                  Linear Algebra - MIT
-                </Link>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex items-center gap-1 h-9">
+                    <GraduationCap className="h-4 w-4" />
+                    Classes
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  <DropdownMenuItem asChild>
+                    <Link href="/">
+                      Linear Algebra - MIT
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
