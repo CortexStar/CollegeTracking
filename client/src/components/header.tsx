@@ -34,7 +34,7 @@ export default function Header() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56">
                   <DropdownMenuItem asChild>
-                    <Link href="/">
+                    <Link href="/course">
                       Linear Algebra - MIT
                     </Link>
                   </DropdownMenuItem>

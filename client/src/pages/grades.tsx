@@ -525,8 +525,7 @@ export default function GradesPage() {
               </CardHeader>
               <CardContent>
                 {semesters.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">
-                    <p>No semesters added yet. Click "Add Semester" to get started.</p>
+                  <div className="text-center py-12">
                   </div>
                 ) : (
                   <Accordion type="single" collapsible className="w-full">
