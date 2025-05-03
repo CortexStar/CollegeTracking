@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { useMobile } from "@/hooks/use-mobile";
 import { ProblemSet as ProblemSetType } from "@/data/problem-sets";
 import SolutionUpload from "@/components/solution-upload";
+import LectureItem from "@/components/lecture-item";
 
 interface ProblemSetProps {
   problemSet: ProblemSetType;
@@ -92,9 +93,12 @@ export default function ProblemSet({ problemSet, isActive, isCompleted = false, 
             </h3>
             <div className="space-y-3 text-gray-700 dark:text-gray-300 text-base">
               {problemSet.lectures.map((lecture, index) => (
-                <div key={index} className="text-base">
-                  <span className="font-medium">Lecture {lecture.number}:</span> {lecture.title}
-                </div>
+                <LectureItem 
+                  key={index}
+                  problemSetId={problemSet.id}
+                  number={lecture.number}
+                  title={lecture.title}
+                />
               ))}
             </div>
           </div>

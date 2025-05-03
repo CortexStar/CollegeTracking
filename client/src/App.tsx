@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SolutionsProvider } from "@/components/solutions-provider";
+import { LectureLinksProvider } from "@/components/lecture-links-provider";
 import Home from "@/pages/home";
 import TextbookPage from "@/pages/textbook";
 import NotFound from "@/pages/not-found";
@@ -24,8 +25,10 @@ function App() {
     <ThemeProvider defaultTheme="light">
       <QueryClientProvider client={queryClient}>
         <SolutionsProvider>
-          <Router />
-          <Toaster />
+          <LectureLinksProvider>
+            <Router />
+            <Toaster />
+          </LectureLinksProvider>
         </SolutionsProvider>
       </QueryClientProvider>
     </ThemeProvider>
