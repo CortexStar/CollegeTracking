@@ -392,9 +392,14 @@ export default function GradesPage() {
           if (field === 'credits') {
             const numValue = parseFloat(value);
             if (!isNaN(numValue) && numValue > 0) {
+              // Update credits and recalculate grade points based on current grade
+              const currentGrade = updatedCourses[courseIndex].grade;
+              const gradePointValue = currentGrade ? gradePointValues[currentGrade] : 0;
+              
               updatedCourses[courseIndex] = {
                 ...updatedCourses[courseIndex],
-                [field]: numValue
+                [field]: numValue,
+                // No need to update gradePoints as it's per credit unit
               };
             }
           } else if (field === 'grade') {
@@ -472,7 +477,7 @@ export default function GradesPage() {
                   </div>
                   <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button size="sm" className="h-8 px-3 text-xs">Add Semester</Button>
+                      <Button size="sm" variant="outline" className="h-7 px-2 text-xs">Add Semester</Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[625px]">
                       <DialogHeader>
@@ -512,7 +517,7 @@ export default function GradesPage() {
                         <DialogClose asChild>
                           <Button variant="outline">Cancel</Button>
                         </DialogClose>
-                        <Button onClick={addSemester}>Add Semester</Button>
+                        <Button variant="default" onClick={addSemester}>Add Semester</Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
@@ -527,77 +532,71 @@ export default function GradesPage() {
                   <Accordion type="single" collapsible className="w-full">
                     {semesters.map((semester) => (
                       <AccordionItem key={semester.id} value={semester.id}>
-                        <AccordionTrigger className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800">
-                          <div className="flex items-center justify-between w-full pr-4">
-                            <div className="flex items-center">
-                              <CheckCircle className="h-5 w-5 mr-3 text-green-500 flex-shrink-0" />
-                              {editingSemesterId === semester.id ? (
-                                <form 
-                                  onSubmit={(e) => {
-                                    e.preventDefault();
-                                    saveEditedSemesterName();
-                                  }}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="flex"
-                                >
-                                  <Input
-                                    ref={inputRef}
-                                    className="text-xl font-medium h-8 min-w-[200px] border-0 shadow-none bg-transparent p-0 focus-visible:ring-0"
-                                    value={editedSemesterName}
-                                    onChange={(e) => setEditedSemesterName(e.target.value)}
-                                    onBlur={saveEditedSemesterName}
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Escape") {
-                                        setEditingSemesterId(null);
-                                        setEditedSemesterName("");
-                                      }
-                                    }}
-                                  />
-                                </form>
-                              ) : (
-                                <ContextMenu>
-                                  <ContextMenuTrigger>
-                                    <span 
-                                      className="text-xl font-medium cursor-pointer" 
-                                      onMouseDown={(e) => {
-                                        e.stopPropagation();
-                                        const timer = setTimeout(() => {
-                                          startEditingSemesterName(semester.id, semester.name);
-                                        }, 3000);
-                                        const clearTimer = () => {
-                                          clearTimeout(timer);
-                                          window.removeEventListener('mouseup', clearTimer);
-                                        };
-                                        window.addEventListener('mouseup', clearTimer, { once: true });
+                        <ContextMenu>
+                          <ContextMenuTrigger>
+                            <AccordionTrigger className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800">
+                              <div className="flex items-center justify-between w-full pr-4">
+                                <div className="flex items-center">
+                                  {editingSemesterId === semester.id ? (
+                                    <form 
+                                      onSubmit={(e) => {
+                                        e.preventDefault();
+                                        saveEditedSemesterName();
                                       }}
-                                      title="Hold left-click for 3 seconds to edit"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="flex"
+                                    >
+                                      <Input
+                                        ref={inputRef}
+                                        className="text-xl font-medium h-8 min-w-[200px] border-0 shadow-none bg-transparent p-0 focus-visible:ring-0"
+                                        value={editedSemesterName}
+                                        onChange={(e) => setEditedSemesterName(e.target.value)}
+                                        onBlur={saveEditedSemesterName}
+                                        onKeyDown={(e) => {
+                                          if (e.key === "Escape") {
+                                            setEditingSemesterId(null);
+                                            setEditedSemesterName("");
+                                          }
+                                        }}
+                                      />
+                                    </form>
+                                  ) : (
+                                    <span 
+                                      className="text-xl font-medium cursor-pointer"
+                                      onClick={(e) => {
+                                        if (e.detail === 3) { // Triple click
+                                          e.stopPropagation();
+                                          startEditingSemesterName(semester.id, semester.name);
+                                        }
+                                      }}
+                                      title="Triple-click to edit"
                                     >
                                       {semester.name}
                                     </span>
-                                  </ContextMenuTrigger>
-                                  <ContextMenuContent>
-                                    <ContextMenuItem 
-                                      onClick={() => removeSemester(semester.id)}
-                                      className="text-red-500 hover:text-red-600 focus:text-red-600"
-                                    >
-                                      Delete Semester
-                                    </ContextMenuItem>
-                                  </ContextMenuContent>
-                                </ContextMenu>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-8">
-                              <div className="text-right">
-                                <span className="text-sm text-gray-500">GPA</span>
-                                <p className="font-semibold min-w-[3ch] text-right">{semester.gpa.toFixed(2)}</p>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-8">
+                                  <div className="text-right">
+                                    <span className="text-sm text-gray-500">GPA</span>
+                                    <p className="font-semibold min-w-[3ch] text-right">{semester.gpa.toFixed(2)}</p>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="text-sm text-gray-500">Credits</span>
+                                    <p className="font-semibold min-w-[3ch] text-right">{semester.totalCredits.toFixed(1)}</p>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="text-right">
-                                <span className="text-sm text-gray-500">Credits</span>
-                                <p className="font-semibold min-w-[3ch] text-right">{semester.totalCredits.toFixed(1)}</p>
-                              </div>
-                            </div>
-                          </div>
-                        </AccordionTrigger>
+                            </AccordionTrigger>
+                          </ContextMenuTrigger>
+                          <ContextMenuContent>
+                            <ContextMenuItem 
+                              onClick={() => removeSemester(semester.id)}
+                              className="text-red-500 hover:text-red-600 focus:text-red-600"
+                            >
+                              Delete Semester
+                            </ContextMenuItem>
+                          </ContextMenuContent>
+                        </ContextMenu>
                         <AccordionContent className="px-4 pt-2 pb-4">
                           <ContextMenu>
                             <ContextMenuTrigger className="block w-full">
