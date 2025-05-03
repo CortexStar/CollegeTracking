@@ -472,7 +472,7 @@ export default function GradesPage() {
                   </div>
                   <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button size="sm">Add Semester</Button>
+                      <Button size="sm" className="h-8 px-3 text-xs">Add Semester</Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[625px]">
                       <DialogHeader>
@@ -555,16 +555,35 @@ export default function GradesPage() {
                                   />
                                 </form>
                               ) : (
-                                <span 
-                                  className="text-xl font-medium cursor-pointer" 
-                                  onDoubleClick={(e) => {
-                                    e.stopPropagation();
-                                    startEditingSemesterName(semester.id, semester.name);
-                                  }}
-                                  title="Double-click to edit"
-                                >
-                                  {semester.name}
-                                </span>
+                                <ContextMenu>
+                                  <ContextMenuTrigger>
+                                    <span 
+                                      className="text-xl font-medium cursor-pointer" 
+                                      onMouseDown={(e) => {
+                                        e.stopPropagation();
+                                        const timer = setTimeout(() => {
+                                          startEditingSemesterName(semester.id, semester.name);
+                                        }, 3000);
+                                        const clearTimer = () => {
+                                          clearTimeout(timer);
+                                          window.removeEventListener('mouseup', clearTimer);
+                                        };
+                                        window.addEventListener('mouseup', clearTimer, { once: true });
+                                      }}
+                                      title="Hold left-click for 3 seconds to edit"
+                                    >
+                                      {semester.name}
+                                    </span>
+                                  </ContextMenuTrigger>
+                                  <ContextMenuContent>
+                                    <ContextMenuItem 
+                                      onClick={() => removeSemester(semester.id)}
+                                      className="text-red-500 hover:text-red-600 focus:text-red-600"
+                                    >
+                                      Delete Semester
+                                    </ContextMenuItem>
+                                  </ContextMenuContent>
+                                </ContextMenu>
                               )}
                             </div>
                             <div className="flex items-center gap-8">
@@ -757,7 +776,7 @@ export default function GradesPage() {
                                       </TableRow>
                                     ))}
                                     <TableRow className="bg-gray-50 dark:bg-gray-800 font-semibold">
-                                      <TableCell colSpan={3} className="pl-8">Semester Totals:</TableCell>
+                                      <TableCell colSpan={3} className="font-medium">Semester Totals:</TableCell>
                                       <TableCell className="text-center">{semester.totalCredits.toFixed(1)}</TableCell>
                                       <TableCell className="text-center">{semester.totalGradePoints.toFixed(2)}</TableCell>
                                     </TableRow>
