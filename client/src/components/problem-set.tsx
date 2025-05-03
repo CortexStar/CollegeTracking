@@ -134,9 +134,17 @@ export default function ProblemSet({ problemSet, isActive, isCompleted = false, 
 
           {/* Assigned Problems */}
           <div>
-            <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-6 text-center">
-              Assigned Problems
-            </h3>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100">
+                Assigned Problems
+              </h3>
+              <div className="flex-shrink-0">
+                <SolutionUpload 
+                  problemSetId={problemSet.id} 
+                  sectionId={problemSet.id} 
+                />
+              </div>
+            </div>
             <div className={cn("overflow-x-auto", isMobile && "-mx-10 px-10")}>
               <Table>
                 <TableHeader className="bg-gray-50 dark:bg-gray-800">
@@ -144,7 +152,6 @@ export default function ProblemSet({ problemSet, isActive, isCompleted = false, 
                     <TableHead className="w-20 text-sm uppercase text-center">Section</TableHead>
                     <TableHead className="text-sm uppercase">Problems</TableHead>
                     <TableHead className="w-16 text-sm uppercase text-center">Page</TableHead>
-                    <TableHead className="w-24 text-sm uppercase text-center">Solution</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -153,12 +160,6 @@ export default function ProblemSet({ problemSet, isActive, isCompleted = false, 
                       <TableCell className="whitespace-nowrap text-base text-center">{problem.section}</TableCell>
                       <TableCell className="text-base">{problem.problems}</TableCell>
                       <TableCell className="whitespace-nowrap text-base text-gray-500 dark:text-gray-400 text-center">{problem.page}</TableCell>
-                      <TableCell className="text-center">
-                        <SolutionUpload 
-                          problemSetId={problemSet.id} 
-                          sectionId={problem.section} 
-                        />
-                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

@@ -75,20 +75,20 @@ export default function SolutionUpload({ problemSetId, sectionId }: SolutionUplo
   return (
     <>
       {solution ? (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center justify-end gap-1">
           <Button 
-            variant="ghost" 
+            variant="outline" 
             size="sm" 
-            className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 p-1 h-auto"
+            className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 px-3 py-1 h-8 border-blue-200 dark:border-blue-800"
             onClick={() => window.open(solution.fileUrl, '_blank')}
           >
             <FileText className="h-4 w-4" />
-            <span className="text-sm">Solution</span>
+            <span className="text-sm font-medium">Solution</span>
           </Button>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="p-1 h-auto">
+              <Button variant="ghost" size="sm" className="h-8 p-1">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -104,13 +104,13 @@ export default function SolutionUpload({ problemSetId, sectionId }: SolutionUplo
         </div>
       ) : (
         <Button 
-          variant="ghost" 
+          variant="outline" 
           size="sm" 
-          className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 p-1 h-auto"
+          className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 px-3 py-1 h-8 border-blue-200 dark:border-blue-800"
           onClick={() => setIsDialogOpen(true)}
         >
           <FileUp className="h-4 w-4" />
-          <span className="text-sm">Solution</span>
+          <span className="text-sm font-medium">Solution</span>
         </Button>
       )}
 
