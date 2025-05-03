@@ -4,6 +4,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Fix cursor only appearing during text editing */
+* {
+  caret-color: transparent;
+}
+
+input, textarea, [contenteditable="true"], .caret-current {
+  caret-color: currentColor;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

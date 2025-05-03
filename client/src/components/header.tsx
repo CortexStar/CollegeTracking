@@ -19,7 +19,7 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40">
+    <header className="bg-gray-800 dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40 text-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
@@ -29,7 +29,7 @@ export default function Header() {
             <div className="hidden md:flex space-x-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex items-center gap-1 h-9">
+                  <Button variant="outline" size="sm" className="flex items-center gap-1 h-9 border-gray-600 text-white hover:text-white hover:bg-gray-700">
                     <GraduationCap className="h-4 w-4" />
                     Classes
                   </Button>
@@ -45,7 +45,7 @@ export default function Header() {
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex items-center gap-1 h-9">
+                  <Button variant="outline" size="sm" className="flex items-center gap-1 h-9 border-gray-600 text-white hover:text-white hover:bg-gray-700">
                     <Book className="h-4 w-4" />
                     Book
                   </Button>
@@ -60,7 +60,7 @@ export default function Header() {
               </DropdownMenu>
               
               <Link href="/grades">
-                <Button variant="outline" size="sm" className="flex items-center gap-1 h-9">
+                <Button variant="outline" size="sm" className="flex items-center gap-1 h-9 border-gray-600 text-white hover:text-white hover:bg-gray-700">
                   <BarChart className="h-4 w-4" />
                   Grades & Forecasting
                 </Button>
@@ -73,6 +73,7 @@ export default function Header() {
               size="icon"
               onClick={toggleTheme}
               aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              className="text-white hover:text-white hover:bg-gray-700"
             >
               {theme === "dark" ? (
                 <Sun className="h-5 w-5" />
