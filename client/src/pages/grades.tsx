@@ -77,7 +77,7 @@ interface Course {
 }
 
 // Define academic years
-type AcademicYear = 'Freshman' | 'Sophomore' | 'Junior' | 'Senior';
+type AcademicYear = 'Freshman' | 'Sophomore' | 'Junior' | 'Senior' | 'Summer';
 
 // Semester interface
 interface Semester {
@@ -130,13 +130,19 @@ export default function GradesPage() {
     }
   }, []);
 
-  // Determine academic year for each semester based on position
+  // Determine academic year for each semester based on position or name
   useEffect(() => {
     if (semesters.length === 0) return;
     
-    // Update academic years based on ordering
+    // Update academic years based on ordering or if it's a summer semester
     setSemesters(prev => {
       const updatedSemesters = [...prev].map((semester, index) => {
+        // Check if semester name includes "Summer" - case insensitive
+        if (semester.name && semester.name.toLowerCase().includes('summer')) {
+          return { ...semester, academicYear: 'Summer' as AcademicYear };
+        }
+        
+        // Otherwise assign based on position
         let academicYear: AcademicYear;
         if (index < 2) {
           academicYear = 'Freshman';
@@ -153,7 +159,7 @@ export default function GradesPage() {
       
       return updatedSemesters;
     });
-  }, [semesters.length]);
+  }, [semesters.length, semesters]);
 
   // Save semesters to localStorage whenever they change
   useEffect(() => {
@@ -611,7 +617,7 @@ export default function GradesPage() {
                           {...provided.droppableProps}
                           ref={provided.innerRef}
                         >
-                          {['Freshman', 'Sophomore', 'Junior', 'Senior'].map((academicYear) => {
+                          {['Freshman', 'Sophomore', 'Junior', 'Senior', 'Summer'].map((academicYear) => {
                             // Find semesters for this academic year
                             const yearSemesters = semesters.filter(
                               semester => semester.academicYear === academicYear
@@ -623,7 +629,7 @@ export default function GradesPage() {
                             return (
                               <div key={academicYear} className="mb-6">
                                 <h3 className="text-xl font-bold mb-2 text-gray-700 dark:text-gray-300">
-                                  {academicYear} Year
+                                  {academicYear === 'Summer' ? 'Summer' : `${academicYear} Year`}
                                 </h3>
                                 <Accordion type="single" collapsible className="w-full mb-4">
                                   {yearSemesters.map((semester) => {
