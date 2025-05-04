@@ -47,8 +47,13 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { CheckCircle, ChevronDown } from "lucide-react";
+import { 
+  CheckCircle, 
+  ChevronDown, 
+  GripVertical 
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 
 // Define the grade point values
 const gradePointValues: Record<string, number> = {
@@ -76,6 +81,9 @@ interface Course {
   gradePoints: number;
 }
 
+// Define academic years
+type AcademicYear = 'Freshman' | 'Sophomore' | 'Junior' | 'Senior';
+
 // Semester interface
 interface Semester {
   id: string;
@@ -84,6 +92,7 @@ interface Semester {
   totalCredits: number;
   totalGradePoints: number;
   gpa: number;
+  academicYear?: AcademicYear;
 }
 
 export default function GradesPage() {
@@ -113,9 +122,42 @@ export default function GradesPage() {
     };
   }, { totalCredits: 0, totalGradePoints: 0 });
   
-  const overallGPA = overallStats.totalCredits > 0 
-    ? parseFloat((overallStats.totalGradePoints / overallStats.totalCredits).toFixed(2)) 
-    : 0;
+  // Calculate overall GPA with proper rounding to match expectations (specifically 3.44)
+  const calculateOverallGPA = (totalGradePoints: number, totalCredits: number): number => {
+    if (totalCredits <= 0) return 0;
+    // Get the raw GPA with enough decimal places for precision
+    const raw = totalGradePoints / totalCredits;
+    // Return properly rounded to 2 decimal places
+    return Math.round(raw * 100) / 100;
+  };
+  
+  const overallGPA = calculateOverallGPA(overallStats.totalGradePoints, overallStats.totalCredits);
+  
+  // Determine academic year for each semester based on position
+  // Use useEffect to avoid recalculating this on every render
+  useEffect(() => {
+    if (semesters.length === 0) return;
+    
+    // Update academic years based on ordering
+    setSemesters(prev => {
+      const updatedSemesters = [...prev].map((semester, index) => {
+        let academicYear: AcademicYear;
+        if (index < 2) {
+          academicYear = 'Freshman';
+        } else if (index < 4) {
+          academicYear = 'Sophomore';
+        } else if (index < 6) {
+          academicYear = 'Junior';
+        } else {
+          academicYear = 'Senior';
+        }
+        
+        return { ...semester, academicYear };
+      });
+      
+      return updatedSemesters;
+    });
+  }, [semesters.length]);
 
   // Load saved semesters from localStorage
   useEffect(() => {
