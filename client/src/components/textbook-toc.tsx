@@ -137,9 +137,10 @@ const tableOfContents: Chapter[] = [
 
 interface TextbookTocProps {
   onSelectPage?: (page: number) => void;
+  pdfUrl?: string;
 }
 
-export default function TextbookToc({ onSelectPage }: TextbookTocProps) {
+export default function TextbookToc({ onSelectPage, pdfUrl }: TextbookTocProps) {
   const [open, setOpen] = useState(false);
   
   const handleSelectSection = (page: number) => {
@@ -155,7 +156,8 @@ export default function TextbookToc({ onSelectPage }: TextbookTocProps) {
     
     // Open the PDF at that page in a new tab as a fallback
     // Note: This is a limited solution as most PDF viewers don't support page parameters in URLs
-    window.open(`/linear-algebra-book.pdf#page=${adjustedPage}`, '_blank');
+    const pdfToOpen = pdfUrl || '/linear-algebra-book.pdf';
+    window.open(`${pdfToOpen}#page=${adjustedPage}`, '_blank');
   };
 
   return (
