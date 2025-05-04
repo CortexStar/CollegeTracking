@@ -6,6 +6,7 @@ import { ProgressCircle } from "@/components/progress-circle";
 import CourseNameDisplay from "@/components/course-name-display";
 import { useProgress } from "@/hooks/use-progress";
 import { problemSets } from "@/data/problem-sets";
+import Layout from "@/components/layout";
 
 export default function Home() {
   const [location] = useLocation();
@@ -43,7 +44,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">      
+    <Layout>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-grow">
         <div className="max-w-6xl mx-auto">
           <div className="mb-10 flex flex-row items-start justify-between">
@@ -86,6 +87,6 @@ export default function Home() {
           <ChevronUp className="h-5 w-5" />
         </button>
       )}
-    </div>
+    </Layout>
   );
 }
