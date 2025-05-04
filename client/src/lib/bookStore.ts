@@ -36,3 +36,11 @@ export function updateBook(id: string, patch: Partial<Pick<BookMeta,"title"|"aut
   localStorage.setItem(KEY, JSON.stringify(all));
   listeners.forEach(fn => fn());
 }
+
+export function deleteBook(id: string) {
+  const all = getBooks();
+  const filtered = all.filter(book => book.id !== id);
+  localStorage.setItem(KEY, JSON.stringify(filtered));
+  listeners.forEach(fn => fn());
+  return filtered;
+}

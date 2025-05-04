@@ -1,10 +1,11 @@
-import { Sun, Moon, Book, GraduationCap, BarChart } from "lucide-react";
+import { Sun, Moon, Book, GraduationCap, BarChart, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme-provider";
 import { useCourseName } from "@/hooks/use-course-name";
 import { Link, useLocation } from "wouter";
 import { useEffect, useState } from "react";
-import { getBooks, onBooksChange, BookMeta } from "@/lib/bookStore";
+import { getBooks, onBooksChange, BookMeta, deleteBook } from "@/lib/bookStore";
+import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +26,7 @@ export default function Header() {
   const { courseName } = useCourseName();
   const [books, setBooks] = useState<BookMeta[]>([]);
   const [, navigate] = useLocation();
+  const { toast } = useToast();
 
   useEffect(() => {
     setBooks(getBooks());
@@ -89,12 +91,30 @@ export default function Header() {
                   <>
                     <DropdownMenuSeparator />
                     {books.map(book => (
-                      <DropdownMenuItem 
-                        key={book.id}
-                        onClick={() => navigate(`/books/${book.id}`)}
-                      >
-                        {book.title}
-                      </DropdownMenuItem>
+                      <ContextMenu key={book.id}>
+                        <ContextMenuTrigger asChild>
+                          <DropdownMenuItem 
+                            onClick={() => navigate(`/books/${book.id}`)}
+                          >
+                            {book.title}
+                          </DropdownMenuItem>
+                        </ContextMenuTrigger>
+                        <ContextMenuContent>
+                          <ContextMenuItem 
+                            className="text-red-500 focus:text-red-500 focus:bg-red-50 dark:focus:bg-red-950"
+                            onClick={() => {
+                              deleteBook(book.id);
+                              toast({
+                                title: "Book deleted",
+                                description: `"${book.title}" has been removed from your library`
+                              });
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Book
+                          </ContextMenuItem>
+                        </ContextMenuContent>
+                      </ContextMenu>
                     ))}
                   </>
                 )}
