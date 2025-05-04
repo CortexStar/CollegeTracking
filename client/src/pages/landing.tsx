@@ -94,7 +94,7 @@ export default function Landing() {
     {/* Radix will use <div> itself as the trigger  */}
     <ContextMenuTrigger asChild>
       <div
-        className="flex-1 flex items-center justify-center overflow-hidden"
+        className="w-full h-full flex items-center justify-center overflow-hidden"
         style={
           backgroundImage
             ? {
