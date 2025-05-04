@@ -1,19 +1,57 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { FileText, Printer } from "lucide-react";
 import TextbookToc from "@/components/textbook-toc";
+import { Input } from "@/components/ui/input";
+import { getBook, updateBook, BookMeta } from "@/lib/bookStore";
+import { useToast } from "@/hooks/use-toast";
 
 export default function TextbookPage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const totalPages = 575; // Approximate from the PDF
-
+  const [book, setBook] = useState<BookMeta | null>(null);
+  const [, navigate] = useLocation();
+  const [editing, setEditing] = useState<{field: "title" | "author" | null}>({field: null});
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    // Find the default linear algebra book
+    const defaultBook = getBook("linear-algebra-default");
+    if (defaultBook) {
+      setBook(defaultBook);
+    }
+  }, []);
+  
   function goToPage(page: number) {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
       // For iframe we can't directly control the page
       // This would be used with the TOC
     }
+  }
+  
+  function commit(field: "title" | "author", value: string) {
+    if (!book) return;
+    
+    updateBook(book.id, { [field]: value });
+    setEditing({field: null});
+    // Update local state
+    setBook({...book, [field]: value});
+    
+    toast({
+      title: `${field.charAt(0).toUpperCase() + field.slice(1)} updated`,
+      description: `The ${field} has been updated successfully`,
+    });
+  }
+  
+  if (!book) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="text-center">Loading book...</div>
+      </div>
+    );
   }
 
   return (
@@ -22,15 +60,52 @@ export default function TextbookPage() {
         <div className="max-w-6xl mx-auto mb-0">
           <div className="flex items-center justify-between mb-0">
             <div className="max-w-3xl">
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100">
-                Introduction to Linear Algebra
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 text-lg mt-1">
-                Fourth Edition • Gilbert Strang
-              </p>
+              {editing.field === "title" ? (
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const input = e.currentTarget.querySelector('input');
+                  if (input) commit("title", input.value);
+                }}>
+                  <Input
+                    autoFocus 
+                    defaultValue={book.title}
+                    onBlur={(e) => commit("title", e.target.value)}
+                    className="text-4xl font-bold mb-1 h-auto text-left text-gray-900 dark:text-gray-100"
+                  />
+                </form>
+              ) : (
+                <h1
+                  className="text-4xl font-bold cursor-pointer hover:underline hover:underline-offset-4 text-gray-900 dark:text-gray-100"
+                  onDoubleClick={() => setEditing({field: "title"})}
+                >
+                  {book.title}
+                </h1>
+              )}
+
+              {editing.field === "author" ? (
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const input = e.currentTarget.querySelector('input');
+                  if (input) commit("author", input.value);
+                }}>
+                  <Input
+                    autoFocus 
+                    defaultValue={book.author}
+                    onBlur={(e) => commit("author", e.target.value)}
+                    className="text-lg text-left text-gray-600 dark:text-gray-400"
+                  />
+                </form>
+              ) : (
+                <p
+                  className="text-lg text-gray-600 dark:text-gray-400 cursor-pointer hover:underline hover:underline-offset-4 mt-1"
+                  onDoubleClick={() => setEditing({field: "author"})}
+                >
+                  {book.author || "(Double-click to add author)"}
+                </p>
+              )}
             </div>
             <div>
-              <TextbookToc onSelectPage={goToPage} />
+              <TextbookToc onSelectPage={goToPage} pdfUrl={book.url} />
             </div>
           </div>
 

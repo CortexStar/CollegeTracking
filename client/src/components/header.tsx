@@ -4,7 +4,7 @@ import { useTheme } from "@/components/theme-provider";
 import { useCourseName } from "@/hooks/use-course-name";
 import { Link, useLocation } from "wouter";
 import { useEffect, useState } from "react";
-import { getBooks, onBooksChange, BookMeta, deleteBook } from "@/lib/bookStore";
+import { getBooks, onBooksChange, BookMeta, deleteBook, initializeDefaultBooks } from "@/lib/bookStore";
 import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
@@ -29,6 +29,10 @@ export default function Header() {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Initialize the default books first
+    initializeDefaultBooks();
+    
+    // Then get all books including default
     setBooks(getBooks());
     const unsubscribe = onBooksChange(() => setBooks(getBooks()));
     return () => { unsubscribe(); };
@@ -81,15 +85,8 @@ export default function Header() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuItem asChild>
-                  <Link href="/textbook">
-                    Introduction to Linear Algebra
-                  </Link>
-                </DropdownMenuItem>
-                
                 {books.length > 0 && (
                   <>
-                    <DropdownMenuSeparator />
                     {books.map(book => (
                       <ContextMenu key={book.id}>
                         <ContextMenuTrigger asChild>
