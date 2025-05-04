@@ -47,11 +47,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { 
-  CheckCircle, 
-  ChevronDown, 
-  GripVertical 
-} from "lucide-react";
+import { GripVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 
@@ -122,7 +118,7 @@ export default function GradesPage() {
     };
   }, { totalCredits: 0, totalGradePoints: 0 });
   
-  // Calculate overall GPA with proper rounding to match expectations (specifically 3.44)
+  // Calculate overall GPA with proper rounding to match expectations
   const calculateOverallGPA = (totalGradePoints: number, totalCredits: number): number => {
     if (totalCredits <= 0) return 0;
     // Get the raw GPA with enough decimal places for precision
@@ -134,7 +130,6 @@ export default function GradesPage() {
   const overallGPA = calculateOverallGPA(overallStats.totalGradePoints, overallStats.totalCredits);
   
   // Determine academic year for each semester based on position
-  // Use useEffect to avoid recalculating this on every render
   useEffect(() => {
     if (semesters.length === 0) return;
     
@@ -171,6 +166,27 @@ export default function GradesPage() {
   useEffect(() => {
     localStorage.setItem("gradeSemesters", JSON.stringify(semesters));
   }, [semesters]);
+
+  // Handle drag-end event for semester reordering
+  const handleDragEnd = (result: any) => {
+    if (!result.destination) return;
+    
+    const sourceIndex = result.source.index;
+    const destinationIndex = result.destination.index;
+    
+    if (sourceIndex === destinationIndex) return;
+    
+    const reorderedSemesters = [...semesters];
+    const [removed] = reorderedSemesters.splice(sourceIndex, 1);
+    reorderedSemesters.splice(destinationIndex, 0, removed);
+    
+    setSemesters(reorderedSemesters);
+    
+    toast({
+      title: "Success",
+      description: "Semester order updated",
+    });
+  };
 
   // Parse course data from raw text
   const parseCourseData = (rawData: string): Course[] => {
@@ -351,33 +367,6 @@ export default function GradesPage() {
     });
   };
   
-  // Move semester up or down in the list
-  const moveSemester = (id: string, direction: 'up' | 'down') => {
-    setSemesters(prev => {
-      const index = prev.findIndex(semester => semester.id === id);
-      
-      // Check if move is possible
-      if ((direction === 'up' && index === 0) || 
-          (direction === 'down' && index === prev.length - 1)) {
-        return prev; // Already at the top/bottom
-      }
-      
-      const newSemesters = [...prev];
-      const targetIndex = direction === 'up' ? index - 1 : index + 1;
-      
-      // Swap positions
-      [newSemesters[index], newSemesters[targetIndex]] = 
-      [newSemesters[targetIndex], newSemesters[index]];
-      
-      return newSemesters;
-    });
-    
-    toast({
-      title: "Success",
-      description: `Semester moved ${direction}`,
-    });
-  };
-
   // Find a semester by id
   const getSemesterById = (id: string) => {
     return semesters.find(sem => sem.id === id);
@@ -463,13 +452,9 @@ export default function GradesPage() {
             const numValue = parseFloat(value);
             if (!isNaN(numValue) && numValue > 0) {
               // Update credits and recalculate grade points based on current grade
-              const currentGrade = updatedCourses[courseIndex].grade;
-              const gradePointValue = currentGrade ? gradePointValues[currentGrade] : 0;
-              
               updatedCourses[courseIndex] = {
                 ...updatedCourses[courseIndex],
                 [field]: numValue,
-                // No need to update gradePoints as it's per credit unit
               };
             }
           } else if (field === 'grade') {
@@ -592,337 +577,321 @@ export default function GradesPage() {
                     <p className="text-gray-500 dark:text-gray-400 mt-2">Click "Add Semester" to get started.</p>
                   </div>
                 ) : (
-                  <DragDropContext 
-                    onDragEnd={(result) => {
-                      // Dropped outside the list
-                      if (!result.destination) return;
-                      
-                      const sourceIndex = result.source.index;
-                      const destinationIndex = result.destination.index;
-                      
-                      // No change
-                      if (sourceIndex === destinationIndex) return;
-                      
-                      setSemesters(prevSemesters => {
-                        const newSemesters = [...prevSemesters];
-                        const [removed] = newSemesters.splice(sourceIndex, 1);
-                        newSemesters.splice(destinationIndex, 0, removed);
-                        return newSemesters;
-                      });
-                    }}
-                  >
-                    <Droppable droppableId="semesters">
-                      {(provided) => (
-                        <div
-                          {...provided.droppableProps}
-                          ref={provided.innerRef}
-                          className="w-full"
-                        >
-                          {/* Group semesters by academic year */}
-                          {['Freshman', 'Sophomore', 'Junior', 'Senior'].map(academicYear => {
-                            // Find semesters for this academic year
-                            const yearSemesters = semesters.filter(
-                              semester => semester.academicYear === academicYear
-                            );
-                            
-                            // Skip years with no semesters
-                            if (yearSemesters.length === 0) return null;
-                            
-                            return (
-                              <div key={academicYear} className="mb-6">
-                                <h3 className="text-xl font-bold mb-2 text-gray-700 dark:text-gray-300">
-                                  {academicYear} Year
-                                </h3>
-                                <Accordion type="single" collapsible className="w-full mb-4">
-                                  {yearSemesters.map((semester) => {
-                                    // Find the actual index in the complete list for dragging
-                                    const semesterIndex = semesters.findIndex(s => s.id === semester.id);
-                                    
-                                    return (
-                                      <Draggable 
-                                        key={semester.id} 
-                                        draggableId={semester.id} 
-                                        index={semesterIndex}
-                                      >
-                                        {(provided) => (
-                                          <div
-                                            ref={provided.innerRef}
-                                            {...provided.draggableProps}
-                                          >
-                                            <AccordionItem value={semester.id}>
-                                              <ContextMenu>
-                                                <ContextMenuTrigger>
-                                                  <div className="flex items-center">
-                                                    <div 
-                                                      {...provided.dragHandleProps}
-                                                      className="px-2 cursor-grab"
-                                                    >
-                                                      <GripVertical className="h-5 w-5 text-gray-500" />
-                                                    </div>
-                                                    <AccordionTrigger className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 flex-grow">
-                                                      <div className="flex items-center justify-between w-full pr-4">
-                                                        <div className="flex items-center">
-                                                          {editingSemesterId === semester.id ? (
-                                                            <form 
-                                                              onSubmit={(e) => {
-                                                                e.preventDefault();
-                                                                saveEditedSemesterName();
-                                                              }}
-                                                              onClick={(e) => e.stopPropagation()}
-                                                              className="flex"
-                                                            >
-                                                              <Input
-                                                                ref={inputRef}
-                                                                className="text-xl font-medium h-8 min-w-[200px] border-0 shadow-none bg-transparent p-0 focus-visible:ring-0"
-                                                                value={editedSemesterName}
-                                                                onChange={(e) => setEditedSemesterName(e.target.value)}
-                                                                onBlur={saveEditedSemesterName}
-                                                                onKeyDown={(e) => {
-                                                                  if (e.key === "Escape") {
-                                                                    setEditingSemesterId(null);
-                                                                    setEditedSemesterName("");
-                                                                  }
-                                                                }}
-                                                              />
-                                                            </form>
-                                                          ) : (
-                                                            <span 
-                                                              className="text-xl font-medium cursor-text"
-                                                              onClick={(e) => {
-                                                                if (e.detail === 3) { // Triple click
-                                                                  e.stopPropagation();
-                                                                  startEditingSemesterName(semester.id, semester.name);
-                                                                }
-                                                              }}
-                                                              title="Triple-click to edit"
-                                                            >
-                                                              {semester.name}
-                                                            </span>
-                                                          )}
-                                                        </div>
-                                                        <div className="flex items-center gap-8">
-                                                          <div className="text-right">
-                                                            <span className="text-sm text-gray-500">GPA</span>
-                                                            <p className="font-semibold min-w-[3ch] text-right">{semester.gpa.toFixed(2)}</p>
-                                                          </div>
-                                                          <div className="text-right">
-                                                            <span className="text-sm text-gray-500">Credits</span>
-                                                            <p className="font-semibold min-w-[3ch] text-right">{semester.totalCredits.toFixed(1)}</p>
-                                                          </div>
-                                                        </div>
-                                                      </div>
-                                                    </AccordionTrigger>
+                  <DragDropContext onDragEnd={handleDragEnd}>
+                    <div>
+                      {/* Group semesters by academic year */}
+                      {['Freshman', 'Sophomore', 'Junior', 'Senior'].map(academicYear => {
+                        // Find semesters for this academic year
+                        const yearSemesters = semesters.filter(
+                          semester => semester.academicYear === academicYear
+                        );
+                        
+                        // Skip years with no semesters
+                        if (yearSemesters.length === 0) return null;
+                        
+                        return (
+                          <div key={academicYear} className="mb-6">
+                            <h3 className="text-xl font-bold mb-2 text-gray-700 dark:text-gray-300">
+                              {academicYear} Year
+                            </h3>
+                            <Droppable droppableId={`droppable-${academicYear}`} type="SEMESTERS">
+                              {(provided) => (
+                                <div 
+                                  {...provided.droppableProps}
+                                  ref={provided.innerRef}
+                                >
+                                  <Accordion type="single" collapsible className="w-full mb-4">
+                                    {yearSemesters.map((semester, index) => {
+                                      // Find the actual index in the complete list for dragging
+                                      const semesterIndex = semesters.findIndex(s => s.id === semester.id);
+                                      
+                                      return (
+                                        <Draggable 
+                                          key={semester.id} 
+                                          draggableId={semester.id} 
+                                          index={semesterIndex}
+                                        >
+                                          {(provided) => (
+                                            <div
+                                              ref={provided.innerRef}
+                                              {...provided.draggableProps}
+                                              className="mb-2"
+                                            >
+                                              <AccordionItem value={semester.id} className="border rounded-md overflow-hidden">
+                                                <div className="flex items-center">
+                                                  <div 
+                                                    {...provided.dragHandleProps}
+                                                    className="px-2 py-3 cursor-grab"
+                                                  >
+                                                    <GripVertical className="h-5 w-5 text-gray-500" />
                                                   </div>
-                                                </ContextMenuTrigger>
-                                                <ContextMenuContent>
-                                                  <ContextMenuItem 
-                                                    onClick={() => {
-                                                      setCurrentSemesterId(semester.id);
-                                                      setIsAddCourseDialogOpen(true);
-                                                    }}
-                                                  >
-                                                    Add Course
-                                                  </ContextMenuItem>
-                                                  <ContextMenuSeparator />
-                                                  <ContextMenuItem 
-                                                    onClick={() => removeSemester(semester.id)}
-                                                    className="text-red-500 hover:text-red-600 focus:text-red-600"
-                                                  >
-                                                    Delete Semester
-                                                  </ContextMenuItem>
-                                                </ContextMenuContent>
-                                              </ContextMenu>
-                                              <AccordionContent className="px-4 pt-2 pb-4">
-                                                <Table>
-                                                  <TableHeader>
-                                                    <TableRow>
-                                                      <TableHead className="w-32">Course ID</TableHead>
-                                                      <TableHead>Course Title</TableHead>
-                                                      <TableHead className="w-20 text-center">Grade</TableHead>
-                                                      <TableHead className="w-20 text-center">Credits</TableHead>
-                                                      <TableHead className="w-32 text-center">Grade Points</TableHead>
-                                                    </TableRow>
-                                                  </TableHeader>
-                                                  <TableBody>
-                                                    {semester.courses.map((course, i) => (
-                                                      <TableRow key={i}>
-                                                        <TableCell className="font-medium">
-                                                          {editingCourse && 
-                                                            editingCourse.semesterId === semester.id && 
-                                                            editingCourse.courseIndex === i && 
-                                                            editingCourse.field === 'id' ? (
-                                                            <form 
-                                                              onSubmit={(e) => {
-                                                                e.preventDefault();
-                                                                saveEditedCourse();
-                                                              }}
-                                                              onClick={(e) => e.stopPropagation()}
-                                                              className="flex"
-                                                            >
-                                                              <Input
-                                                                ref={inputRef}
-                                                                className="h-8 border-0 shadow-none bg-transparent p-0 focus-visible:ring-0"
-                                                                value={editingCourse.value}
-                                                                onChange={(e) => setEditingCourse({...editingCourse, value: e.target.value})}
-                                                                onBlur={saveEditedCourse}
-                                                                onKeyDown={(e) => {
-                                                                  if (e.key === "Escape") {
-                                                                    setEditingCourse(null);
+                                                  <ContextMenu>
+                                                    <ContextMenuTrigger className="flex-grow">
+                                                      <AccordionTrigger className="flex-grow px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800">
+                                                        <div className="flex items-center justify-between w-full pr-4">
+                                                          <div className="flex items-center">
+                                                            {editingSemesterId === semester.id ? (
+                                                              <form 
+                                                                onSubmit={(e) => {
+                                                                  e.preventDefault();
+                                                                  saveEditedSemesterName();
+                                                                }}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="flex"
+                                                              >
+                                                                <Input
+                                                                  ref={inputRef}
+                                                                  className="h-8 min-w-[200px] text-xl font-medium border-0 shadow-none bg-transparent p-0 focus-visible:ring-0"
+                                                                  value={editedSemesterName}
+                                                                  onChange={(e) => setEditedSemesterName(e.target.value)}
+                                                                  onBlur={saveEditedSemesterName}
+                                                                  onKeyDown={(e) => {
+                                                                    if (e.key === "Escape") {
+                                                                      setEditingSemesterId(null);
+                                                                      setEditedSemesterName("");
+                                                                    }
+                                                                  }}
+                                                                />
+                                                              </form>
+                                                            ) : (
+                                                              <span 
+                                                                className="text-xl font-medium cursor-text"
+                                                                onClick={(e) => {
+                                                                  if (e.detail === 3) { // Triple click
+                                                                    e.stopPropagation();
+                                                                    startEditingSemesterName(semester.id, semester.name);
                                                                   }
                                                                 }}
-                                                              />
-                                                            </form>
-                                                          ) : (
-                                                            <span 
-                                                              onDoubleClick={(e) => {
-                                                                e.stopPropagation();
-                                                                startEditingCourse(semester.id, i, 'id', course.id);
-                                                              }}
-                                                              className="cursor-text block"
-                                                            >
-                                                              {course.id}
-                                                            </span>
-                                                          )}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                          {editingCourse && 
-                                                            editingCourse.semesterId === semester.id && 
-                                                            editingCourse.courseIndex === i && 
-                                                            editingCourse.field === 'title' ? (
-                                                            <form 
-                                                              onSubmit={(e) => {
-                                                                e.preventDefault();
-                                                                saveEditedCourse();
-                                                              }}
-                                                              onClick={(e) => e.stopPropagation()}
-                                                              className="flex"
-                                                            >
-                                                              <Input
-                                                                ref={inputRef}
-                                                                className="h-8 w-full border-0 shadow-none bg-transparent p-0 focus-visible:ring-0"
-                                                                value={editingCourse.value}
-                                                                onChange={(e) => setEditingCourse({...editingCourse, value: e.target.value})}
-                                                                onBlur={saveEditedCourse}
-                                                                onKeyDown={(e) => {
-                                                                  if (e.key === "Escape") {
-                                                                    setEditingCourse(null);
-                                                                  }
-                                                                }}
-                                                              />
-                                                            </form>
-                                                          ) : (
-                                                            <span 
-                                                              onDoubleClick={(e) => {
-                                                                e.stopPropagation();
-                                                                startEditingCourse(semester.id, i, 'title', course.title);
-                                                              }}
-                                                              className="cursor-text block"
-                                                            >
-                                                              {course.title}
-                                                            </span>
-                                                          )}
-                                                        </TableCell>
-                                                        <TableCell className="text-center">
-                                                          {editingCourse && 
-                                                            editingCourse.semesterId === semester.id && 
-                                                            editingCourse.courseIndex === i && 
-                                                            editingCourse.field === 'grade' ? (
-                                                            <form 
-                                                              onSubmit={(e) => {
-                                                                e.preventDefault();
-                                                                saveEditedCourse();
-                                                              }}
-                                                              onClick={(e) => e.stopPropagation()}
-                                                              className="flex justify-center"
-                                                            >
-                                                              <Input
-                                                                ref={inputRef}
-                                                                className="h-8 w-16 border-0 shadow-none bg-transparent p-0 text-center focus-visible:ring-0"
-                                                                value={editingCourse.value}
-                                                                onChange={(e) => setEditingCourse({...editingCourse, value: e.target.value})}
-                                                                onBlur={saveEditedCourse}
-                                                                onKeyDown={(e) => {
-                                                                  if (e.key === "Escape") {
-                                                                    setEditingCourse(null);
-                                                                  }
-                                                                }}
-                                                              />
-                                                            </form>
-                                                          ) : (
-                                                            <span 
-                                                              onDoubleClick={(e) => {
-                                                                e.stopPropagation();
-                                                                startEditingCourse(semester.id, i, 'grade', course.grade);
-                                                              }}
-                                                              className="cursor-text block"
-                                                            >
-                                                              {course.grade}
-                                                            </span>
-                                                          )}
-                                                        </TableCell>
-                                                        <TableCell className="text-center">
-                                                          {editingCourse && 
-                                                            editingCourse.semesterId === semester.id && 
-                                                            editingCourse.courseIndex === i && 
-                                                            editingCourse.field === 'credits' ? (
-                                                            <form 
-                                                              onSubmit={(e) => {
-                                                                e.preventDefault();
-                                                                saveEditedCourse();
-                                                              }}
-                                                              onClick={(e) => e.stopPropagation()}
-                                                              className="flex justify-center"
-                                                            >
-                                                              <Input
-                                                                ref={inputRef}
-                                                                className="h-8 w-16 border-0 shadow-none bg-transparent p-0 text-center focus-visible:ring-0"
-                                                                value={editingCourse.value}
-                                                                type="number"
-                                                                min="0.5"
-                                                                step="0.5"
-                                                                onChange={(e) => setEditingCourse({...editingCourse, value: e.target.value})}
-                                                                onBlur={saveEditedCourse}
-                                                                onKeyDown={(e) => {
-                                                                  if (e.key === "Escape") {
-                                                                    setEditingCourse(null);
-                                                                  }
-                                                                }}
-                                                              />
-                                                            </form>
-                                                          ) : (
-                                                            <span 
-                                                              onDoubleClick={(e) => {
-                                                                e.stopPropagation();
-                                                                startEditingCourse(semester.id, i, 'credits', course.credits.toString());
-                                                              }}
-                                                              className="cursor-text block"
-                                                            >
-                                                              {course.credits.toFixed(1)}
-                                                            </span>
-                                                          )}
-                                                        </TableCell>
-                                                        <TableCell className="text-center">
-                                                          {(course.credits * course.gradePoints).toFixed(2)}
-                                                        </TableCell>
+                                                                title="Triple-click to edit"
+                                                              >
+                                                                {semester.name}
+                                                              </span>
+                                                            )}
+                                                          </div>
+                                                          <div className="flex items-center gap-8">
+                                                            <div className="text-right">
+                                                              <span className="text-sm text-gray-500">GPA</span>
+                                                              <p className="font-semibold min-w-[3ch] text-right">{semester.gpa.toFixed(2)}</p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                              <span className="text-sm text-gray-500">Credits</span>
+                                                              <p className="font-semibold min-w-[3ch] text-right">{semester.totalCredits.toFixed(1)}</p>
+                                                            </div>
+                                                          </div>
+                                                        </div>
+                                                      </AccordionTrigger>
+                                                    </ContextMenuTrigger>
+                                                    <ContextMenuContent>
+                                                      <ContextMenuItem 
+                                                        onClick={() => {
+                                                          setCurrentSemesterId(semester.id);
+                                                          setIsAddCourseDialogOpen(true);
+                                                        }}
+                                                      >
+                                                        Add Course
+                                                      </ContextMenuItem>
+                                                      <ContextMenuSeparator />
+                                                      <ContextMenuItem 
+                                                        onClick={() => removeSemester(semester.id)}
+                                                        className="text-red-500 hover:text-red-600 focus:text-red-600"
+                                                      >
+                                                        Delete Semester
+                                                      </ContextMenuItem>
+                                                    </ContextMenuContent>
+                                                  </ContextMenu>
+                                                </div>
+                                                <AccordionContent className="px-4 pt-2 pb-4">
+                                                  <Table>
+                                                    <TableHeader>
+                                                      <TableRow>
+                                                        <TableHead className="w-32">Course ID</TableHead>
+                                                        <TableHead>Course Title</TableHead>
+                                                        <TableHead className="w-20 text-center">Grade</TableHead>
+                                                        <TableHead className="w-20 text-center">Credits</TableHead>
+                                                        <TableHead className="w-32 text-center">Grade Points</TableHead>
                                                       </TableRow>
-                                                    ))}
-                                                  </TableBody>
-                                                </Table>
-                                              </AccordionContent>
-                                            </AccordionItem>
-                                          </div>
-                                        )}
-                                      </Draggable>
-                                    );
-                                  })}
-                                </Accordion>
-                              </div>
-                            );
-                          })}
-                          {provided.placeholder}
-                        </div>
-                      )}
-                    </Droppable>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                      {semester.courses.map((course, i) => (
+                                                        <TableRow key={i}>
+                                                          <TableCell className="font-medium">
+                                                            {editingCourse && 
+                                                             editingCourse.semesterId === semester.id && 
+                                                             editingCourse.courseIndex === i && 
+                                                             editingCourse.field === 'id' ? (
+                                                              <form 
+                                                                onSubmit={(e) => {
+                                                                  e.preventDefault();
+                                                                  saveEditedCourse();
+                                                                }}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="flex"
+                                                              >
+                                                                <Input
+                                                                  ref={inputRef}
+                                                                  className="h-8 border-0 shadow-none bg-transparent p-0 focus-visible:ring-0"
+                                                                  value={editingCourse.value}
+                                                                  onChange={(e) => setEditingCourse({...editingCourse, value: e.target.value})}
+                                                                  onBlur={saveEditedCourse}
+                                                                  onKeyDown={(e) => {
+                                                                    if (e.key === "Escape") {
+                                                                      setEditingCourse(null);
+                                                                    }
+                                                                  }}
+                                                                />
+                                                              </form>
+                                                            ) : (
+                                                              <span 
+                                                                onDoubleClick={(e) => {
+                                                                  e.stopPropagation();
+                                                                  startEditingCourse(semester.id, i, 'id', course.id);
+                                                                }}
+                                                                className="cursor-text block"
+                                                              >
+                                                                {course.id}
+                                                              </span>
+                                                            )}
+                                                          </TableCell>
+                                                          <TableCell>
+                                                            {editingCourse && 
+                                                             editingCourse.semesterId === semester.id && 
+                                                             editingCourse.courseIndex === i && 
+                                                             editingCourse.field === 'title' ? (
+                                                              <form 
+                                                                onSubmit={(e) => {
+                                                                  e.preventDefault();
+                                                                  saveEditedCourse();
+                                                                }}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="flex"
+                                                              >
+                                                                <Input
+                                                                  ref={inputRef}
+                                                                  className="h-8 w-full border-0 shadow-none bg-transparent p-0 focus-visible:ring-0"
+                                                                  value={editingCourse.value}
+                                                                  onChange={(e) => setEditingCourse({...editingCourse, value: e.target.value})}
+                                                                  onBlur={saveEditedCourse}
+                                                                  onKeyDown={(e) => {
+                                                                    if (e.key === "Escape") {
+                                                                      setEditingCourse(null);
+                                                                    }
+                                                                  }}
+                                                                />
+                                                              </form>
+                                                            ) : (
+                                                              <span 
+                                                                onDoubleClick={(e) => {
+                                                                  e.stopPropagation();
+                                                                  startEditingCourse(semester.id, i, 'title', course.title);
+                                                                }}
+                                                                className="cursor-text block"
+                                                              >
+                                                                {course.title}
+                                                              </span>
+                                                            )}
+                                                          </TableCell>
+                                                          <TableCell className="text-center">
+                                                            {editingCourse && 
+                                                             editingCourse.semesterId === semester.id && 
+                                                             editingCourse.courseIndex === i && 
+                                                             editingCourse.field === 'grade' ? (
+                                                              <form 
+                                                                onSubmit={(e) => {
+                                                                  e.preventDefault();
+                                                                  saveEditedCourse();
+                                                                }}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="flex justify-center"
+                                                              >
+                                                                <Input
+                                                                  ref={inputRef}
+                                                                  className="h-8 w-16 border-0 shadow-none bg-transparent p-0 text-center focus-visible:ring-0"
+                                                                  value={editingCourse.value}
+                                                                  onChange={(e) => setEditingCourse({...editingCourse, value: e.target.value})}
+                                                                  onBlur={saveEditedCourse}
+                                                                  onKeyDown={(e) => {
+                                                                    if (e.key === "Escape") {
+                                                                      setEditingCourse(null);
+                                                                    }
+                                                                  }}
+                                                                />
+                                                              </form>
+                                                            ) : (
+                                                              <span 
+                                                                onDoubleClick={(e) => {
+                                                                  e.stopPropagation();
+                                                                  startEditingCourse(semester.id, i, 'grade', course.grade);
+                                                                }}
+                                                                className="cursor-text block"
+                                                              >
+                                                                {course.grade}
+                                                              </span>
+                                                            )}
+                                                          </TableCell>
+                                                          <TableCell className="text-center">
+                                                            {editingCourse && 
+                                                             editingCourse.semesterId === semester.id && 
+                                                             editingCourse.courseIndex === i && 
+                                                             editingCourse.field === 'credits' ? (
+                                                              <form 
+                                                                onSubmit={(e) => {
+                                                                  e.preventDefault();
+                                                                  saveEditedCourse();
+                                                                }}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="flex justify-center"
+                                                              >
+                                                                <Input
+                                                                  ref={inputRef}
+                                                                  className="h-8 w-16 border-0 shadow-none bg-transparent p-0 text-center focus-visible:ring-0"
+                                                                  value={editingCourse.value}
+                                                                  type="number"
+                                                                  min="0.5"
+                                                                  step="0.5"
+                                                                  onChange={(e) => setEditingCourse({...editingCourse, value: e.target.value})}
+                                                                  onBlur={saveEditedCourse}
+                                                                  onKeyDown={(e) => {
+                                                                    if (e.key === "Escape") {
+                                                                      setEditingCourse(null);
+                                                                    }
+                                                                  }}
+                                                                />
+                                                              </form>
+                                                            ) : (
+                                                              <span 
+                                                                onDoubleClick={(e) => {
+                                                                  e.stopPropagation();
+                                                                  startEditingCourse(semester.id, i, 'credits', course.credits.toString());
+                                                                }}
+                                                                className="cursor-text block"
+                                                              >
+                                                                {course.credits.toFixed(1)}
+                                                              </span>
+                                                            )}
+                                                          </TableCell>
+                                                          <TableCell className="text-center">
+                                                            {(course.credits * course.gradePoints).toFixed(2)}
+                                                          </TableCell>
+                                                        </TableRow>
+                                                      ))}
+                                                    </TableBody>
+                                                  </Table>
+                                                </AccordionContent>
+                                              </AccordionItem>
+                                            </div>
+                                          )}
+                                        </Draggable>
+                                      );
+                                    })}
+                                  </Accordion>
+                                  {provided.placeholder}
+                                </div>
+                              )}
+                            </Droppable>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </DragDropContext>
                 )}
                 

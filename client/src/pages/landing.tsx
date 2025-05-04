@@ -90,17 +90,18 @@ export default function Landing() {
   }, []);
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
       <Header />
       
       <ContextMenu>
         <ContextMenuTrigger className="flex-grow">
           <div 
-            className="w-full h-full min-h-[calc(100vh-132px)] relative flex items-center justify-center" 
+            className="w-full h-[calc(100vh-132px)] absolute inset-0 top-[66px] flex items-center justify-center overflow-hidden" 
             style={backgroundImage ? {
               backgroundImage: `url(${backgroundImage})`,
               backgroundSize: 'cover',
-              backgroundPosition: 'center'
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat'
             } : {}}
           >
             {!backgroundImage && (
