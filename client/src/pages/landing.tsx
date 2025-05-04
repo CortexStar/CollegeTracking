@@ -94,10 +94,10 @@ export default function Landing() {
       <Header />
       
       <ContextMenu>
-        <ContextMenuTrigger className="flex-grow">
+        <ContextMenuTrigger asChild>
           {/* Main section that fills available space between header and footer */}
           <main
-            className="flex-grow flex items-center justify-center overflow-hidden"
+            className="flex-1 flex items-center justify-center overflow-hidden"
             style={backgroundImage ? {
               backgroundImage: `url(${backgroundImage})`,
               backgroundSize: 'cover',
