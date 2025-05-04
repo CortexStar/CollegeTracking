@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, DragEvent } from "react";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { 
@@ -12,11 +12,12 @@ import { toast } from "@/hooks/use-toast";
 
 export default function Landing() {
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
 
-  // Function to handle image upload
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  // Function to handle file processing
+  const processFile = (file: File) => {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
@@ -43,6 +44,43 @@ export default function Landing() {
     reader.readAsDataURL(file);
   };
 
+  // Function to handle image upload from input
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processFile(file);
+    }
+  };
+
+  // Drag and drop handlers
+  const handleDragEnter = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      processFile(files[0]);
+    }
+  };
+
   // Load saved image on component mount
   useEffect(() => {
     const savedImage = localStorage.getItem('backgroundImage');
@@ -66,13 +104,32 @@ export default function Landing() {
             } : {}}
           >
             {!backgroundImage && (
-              <Button 
-                variant="outline" 
-                className="absolute bg-gray-700 text-gray-200 border-gray-600"
+              <div 
+                ref={dropZoneRef}
+                className={`w-3/4 h-64 border-2 border-dashed ${isDragging ? 'border-blue-400 dark:border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-700'} rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 dark:hover:border-gray-600 transition-colors`}
                 onClick={() => fileInputRef.current?.click()}
+                onDragEnter={handleDragEnter}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
               >
-                Click to Upload an Image
-              </Button>
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  className="h-12 w-12 text-gray-400 dark:text-gray-600 mb-3" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={1.5} 
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" 
+                  />
+                </svg>
+                <p className="text-center text-gray-500 dark:text-gray-400 mb-2">Click to upload or drag and drop</p>
+                <p className="text-center text-gray-400 dark:text-gray-600 text-sm">SVG, PNG, JPG or GIF</p>
+              </div>
             )}
             <input 
               type="file" 

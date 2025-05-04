@@ -67,11 +67,11 @@ export default function CourseNameDisplay() {
           </button>
         </div>
       ) : (
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center cursor-default">
           {courseName}
           <button
             onClick={startEditing}
-            className="ml-3 text-gray-400 hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+            className="ml-3 text-gray-400 hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
             aria-label="Edit course name"
           >
             <Pencil className="h-4 w-4" />
