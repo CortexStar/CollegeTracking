@@ -61,59 +61,52 @@ export default function Header() {
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <ContextMenu>
-            <ContextMenuTrigger asChild>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="secondary" size="sm" className="flex items-center gap-1">
-                    <Book className="h-4 w-4" />
-                    Book
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56">
-                  <DropdownMenuItem asChild>
-                    <Link href="/textbook">
-                      Introduction to Linear Algebra
-                    </Link>
-                  </DropdownMenuItem>
-                  
-                  {books.length > 0 && (
-                    <>
-                      <DropdownMenuSeparator />
-                      {books.map(book => (
-                        <DropdownMenuItem 
-                          key={book.id}
-                          onClick={() => navigate(`/books/${book.id}`)}
-                        >
-                          {book.title}
-                        </DropdownMenuItem>
-                      ))}
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </ContextMenuTrigger>
-            
-            <ContextMenuContent>
-              <ContextMenuItem onSelect={() => navigate("/books/new")}>
-                ➕ Add Book
-              </ContextMenuItem>
-              
-              {books.length > 0 && (
-                <>
-                  <ContextMenuSeparator />
-                  {books.map(book => (
-                    <ContextMenuItem
-                      key={book.id}
-                      onSelect={() => navigate(`/books/${book.id}`)}
-                    >
-                      {book.title}
-                    </ContextMenuItem>
-                  ))}
-                </>
-              )}
-            </ContextMenuContent>
-          </ContextMenu>
+          <div className="relative">
+            {/* Regular dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  className="flex items-center gap-1"
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    navigate("/books/new");
+                  }}
+                >
+                  <Book className="h-4 w-4" />
+                  Book
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuItem asChild>
+                  <Link href="/textbook">
+                    Introduction to Linear Algebra
+                  </Link>
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem asChild>
+                  <Link href="/books/new">
+                    ➕ Add New Book
+                  </Link>
+                </DropdownMenuItem>
+                
+                {books.length > 0 && (
+                  <>
+                    <DropdownMenuSeparator />
+                    {books.map(book => (
+                      <DropdownMenuItem 
+                        key={book.id}
+                        onClick={() => navigate(`/books/${book.id}`)}
+                      >
+                        {book.title}
+                      </DropdownMenuItem>
+                    ))}
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
           
           <Button asChild variant="secondary" size="sm" className="flex items-center gap-1">
             <Link href="/grades">
