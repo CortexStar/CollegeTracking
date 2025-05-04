@@ -592,22 +592,17 @@ export default function GradesPage() {
                           {...provided.droppableProps}
                           ref={provided.innerRef}
                         >
-                          {['Freshman', 'Sophomore', 'Junior', 'Senior', 'Summer'].map((academicYear) => {
-                            // Find semesters for this academic year
-                            const yearSemesters = semesters.filter(
-                              semester => semester.academicYear === academicYear
-                            );
-                            
-                            // Skip years with no semesters
-                            if (yearSemesters.length === 0) return null;
+                          {organizedSections.map((section) => {
+                            // Skip sections with no semesters
+                            if (section.semesters.length === 0) return null;
                             
                             return (
-                              <div key={academicYear} className="mb-6">
+                              <div key={section.label} className="mb-6">
                                 <h3 className="text-xl font-bold mb-2 text-gray-700 dark:text-gray-300">
-                                  {academicYear === 'Summer' ? 'Summer' : `${academicYear} Year`}
+                                  {section.label}
                                 </h3>
                                 <Accordion type="single" collapsible className="w-full mb-4">
-                                  {yearSemesters.map((semester) => {
+                                  {section.semesters.map((semester) => {
                                     // Find the actual index in the complete list
                                     const semesterIndex = semesters.findIndex(s => s.id === semester.id);
                                     
