@@ -200,12 +200,16 @@ export default function GradesPage() {
           finalizeCourse();
         }
         
-        // Extract course ID
+        // Extract course ID - remove any parenthetical numbers
         const courseId = courseIdMatch[1].trim().replace(/\(\d+\)/g, '').trim();
         
-        // Try to extract title - could be separated by a dash, colon, or just a space
+        // Try to extract title - first remove any parenthetical numbers from the whole line
+        const cleanLine = line.replace(/\(\d+\)/g, '').trim();
+        
+        // Now get the text after the course ID
         let title = '';
-        const remainingText = line.substring(courseIdMatch[0].length).trim();
+        const startIndex = cleanLine.indexOf(courseId) + courseId.length;
+        const remainingText = cleanLine.substring(startIndex).trim();
         
         if (remainingText) {
           // Check if there's a separator like dash or colon
