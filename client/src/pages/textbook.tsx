@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { FileText } from "lucide-react";
-import Header from "@/components/header";
-import Footer from "@/components/footer";
 import TextbookToc from "@/components/textbook-toc";
 
 export default function TextbookPage() {
@@ -20,7 +18,6 @@ export default function TextbookPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Header />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3 flex-grow">
         <div className="max-w-6xl mx-auto mb-0">
           <div className="flex items-center justify-between mb-0">
@@ -86,7 +83,6 @@ export default function TextbookPage() {
           </Card>
         </div>
       </div>
-      <Footer />
     </div>
   );
 }
