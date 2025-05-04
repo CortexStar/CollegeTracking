@@ -946,7 +946,7 @@ export default function GradesPage() {
       <Collapsible 
         open={isGradeScaleOpen} 
         onOpenChange={setIsGradeScaleOpen}
-        className="mt-8 flex justify-center bg-white dark:bg-gray-800 rounded-lg shadow-lg w-64 z-10 mx-auto"
+        className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg w-72 z-10 mx-auto overflow-hidden"
       >
         <CollapsibleTrigger asChild>
           <Button variant="ghost" size="sm" className="w-full flex justify-between items-center p-4">
@@ -954,19 +954,19 @@ export default function GradesPage() {
             <span>{isGradeScaleOpen ? '▼' : '▲'}</span>
           </Button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="p-4 pt-0">
+        <CollapsibleContent className="px-0 pt-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Grade</TableHead>
-                <TableHead>Points</TableHead>
+                <TableHead className="w-1/2 px-6">Grade</TableHead>
+                <TableHead className="w-1/2 px-6 text-right">Points</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {Object.entries(gradePointValues).map(([grade, points]) => (
                 <TableRow key={grade}>
-                  <TableCell>{grade}</TableCell>
-                  <TableCell>{points.toFixed(2)}</TableCell>
+                  <TableCell className="px-6">{grade}</TableCell>
+                  <TableCell className="px-6 text-right">{points.toFixed(2)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
