@@ -19,7 +19,7 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-gray-800 dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40 text-white">
+    <header className="bg-gray-800 dark:bg-gray-950 sticky top-0 z-40 text-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
