@@ -143,6 +143,9 @@ interface TextbookTocProps {
 export default function TextbookToc({ onSelectPage, pdfUrl }: TextbookTocProps) {
   const [open, setOpen] = useState(false);
   
+  // Determine if we should show the standard TOC (only for the main textbook)
+  const isMainTextbook = !pdfUrl || pdfUrl === '/linear-algebra-book.pdf';
+  
   const handleSelectSection = (page: number) => {
     // Adjust page number to account for the difference between textbook page numbers and PDF page numbers
     // Add 10 to every page number except for page 2 (section 1.1) which is correct
@@ -173,36 +176,49 @@ export default function TextbookToc({ onSelectPage, pdfUrl }: TextbookTocProps) 
           <DialogTitle className="text-xl text-center">Table of Contents</DialogTitle>
         </DialogHeader>
         <div className="mt-4">
-          <Accordion type="multiple" className="w-full">
-            {tableOfContents.map((chapter) => (
-              <AccordionItem key={chapter.id} value={`chapter-${chapter.id}`}>
-                <AccordionTrigger className="text-lg font-medium hover:no-underline">
-                  {chapter.id}. {chapter.title}
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="space-y-2 pl-4">
-                    {chapter.sections.map((section) => (
-                      <div 
-                        key={section.id} 
-                        className="flex items-center justify-between py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-2"
-                        onClick={() => handleSelectSection(section.page)}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{section.id}</span>
-                          <span>{section.title}</span>
+          {isMainTextbook ? (
+            <Accordion type="multiple" className="w-full">
+              {tableOfContents.map((chapter) => (
+                <AccordionItem key={chapter.id} value={`chapter-${chapter.id}`}>
+                  <AccordionTrigger className="text-lg font-medium hover:no-underline">
+                    {chapter.id}. {chapter.title}
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2 pl-4">
+                      {chapter.sections.map((section) => (
+                        <div 
+                          key={section.id} 
+                          className="flex items-center justify-between py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-2"
+                          onClick={() => handleSelectSection(section.page)}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{section.id}</span>
+                            <span>{section.title}</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-gray-500">
+                            <span>p. {section.page}</span>
+                            <span className="text-xs opacity-70">(PDF: {section.page === 2 ? 2 : section.page + 10})</span>
+                            <ChevronRight className="h-3 w-3 ml-1" />
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 text-gray-500">
-                          <span>p. {section.page}</span>
-                          <span className="text-xs opacity-70">(PDF: {section.page === 2 ? 2 : section.page + 10})</span>
-                          <ChevronRight className="h-3 w-3 ml-1" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          ) : (
+            <div className="py-12 text-center">
+              <div className="mb-6 flex justify-center">
+                <Book className="h-16 w-16 text-gray-300 dark:text-gray-600" />
+              </div>
+              <h3 className="text-lg font-medium mb-2">Table of Contents Not Available</h3>
+              <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+                Detailed table of contents is not available for this uploaded book. 
+                You can still navigate through the PDF using the scroll controls.
+              </p>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

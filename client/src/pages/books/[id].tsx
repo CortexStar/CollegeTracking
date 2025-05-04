@@ -114,14 +114,15 @@ export default function BookPage() {
         {/* PDF Viewer */}
         <Card>
           <CardContent className="p-0 rounded-lg overflow-hidden">
-            <div className="w-full h-[800px]">
-              <embed 
-                src={book.url} 
-                type="application/pdf" 
-                width="100%" 
-                height="100%" 
-                className="w-full h-full"
-              />
+            <div className="flex flex-col items-center justify-center p-0 bg-white dark:bg-gray-800 min-h-[800px] overflow-auto">
+              <div className="w-full">
+                <embed 
+                  src={book.url} 
+                  type="application/pdf" 
+                  width="100%" 
+                  height="1200px"
+                />
+              </div>
             </div>
           </CardContent>
         </Card>

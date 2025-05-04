@@ -85,12 +85,6 @@ export default function Header() {
                   </Link>
                 </DropdownMenuItem>
                 
-                <DropdownMenuItem asChild>
-                  <Link href="/books/new">
-                    ➕ Add New Book
-                  </Link>
-                </DropdownMenuItem>
-                
                 {books.length > 0 && (
                   <>
                     <DropdownMenuSeparator />
@@ -104,6 +98,13 @@ export default function Header() {
                     ))}
                   </>
                 )}
+                
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/books/new">
+                    ➕ Add New Book
+                  </Link>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
