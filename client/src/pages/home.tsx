@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { ChevronUp } from "lucide-react";
 import ProblemSet from "@/components/problem-set";
+import Header from "@/components/header";
+import Footer from "@/components/footer";
 import { ProgressCircle } from "@/components/progress-circle";
 import CourseNameDisplay from "@/components/course-name-display";
 import { useProgress } from "@/hooks/use-progress";
 import { problemSets } from "@/data/problem-sets";
-import Layout from "@/components/layout";
 
 export default function Home() {
   const [location] = useLocation();
@@ -44,7 +45,9 @@ export default function Home() {
   };
 
   return (
-    <Layout>
+    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Header />
+      
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-grow">
         <div className="max-w-6xl mx-auto">
           <div className="mb-10 flex flex-row items-start justify-between">
@@ -76,17 +79,21 @@ export default function Home() {
             />
           ))}
 
-          {showScrollToTop && (
-            <button 
-              onClick={scrollToTop}
-              className="fixed bottom-8 right-8 p-3 rounded-full bg-primary/90 text-primary-foreground shadow-lg hover:bg-primary transition-all duration-300"
-              aria-label="Scroll to top"
-            >
-              <ChevronUp className="h-5 w-5" />
-            </button>
-          )}
+
         </div>
       </div>
-    </Layout>
+
+      <Footer />
+
+      {showScrollToTop && (
+        <button 
+          onClick={scrollToTop}
+          className="fixed bottom-8 right-8 p-3 rounded-full bg-primary/90 text-primary-foreground shadow-lg hover:bg-primary transition-all duration-300"
+          aria-label="Scroll to top"
+        >
+          <ChevronUp className="h-5 w-5" />
+        </button>
+      )}
+    </div>
   );
 }
