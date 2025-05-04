@@ -2,8 +2,6 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { ChevronUp } from "lucide-react";
 import ProblemSet from "@/components/problem-set";
-import Header from "@/components/header";
-import Footer from "@/components/footer";
 import { ProgressCircle } from "@/components/progress-circle";
 import CourseNameDisplay from "@/components/course-name-display";
 import { useProgress } from "@/hooks/use-progress";
@@ -45,9 +43,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Header />
-      
+    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">      
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-grow">
         <div className="max-w-6xl mx-auto">
           <div className="mb-10 flex flex-row items-start justify-between">
@@ -78,12 +74,8 @@ export default function Home() {
               onToggleCompletion={() => toggleUnitCompletion(problemSet.id)}
             />
           ))}
-
-
         </div>
       </div>
-
-      <Footer />
 
       {showScrollToTop && (
         <button 

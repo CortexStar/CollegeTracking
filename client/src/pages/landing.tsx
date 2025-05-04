@@ -90,71 +90,78 @@ export default function Landing() {
   }, []);
 
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>
-        <div
-          className="flex-1 flex items-center justify-center overflow-hidden"
-          style={backgroundImage ? {
-            backgroundImage: `url(${backgroundImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat'
-          } : {}}
-        >
-          {!backgroundImage && (
-            <div 
-              ref={dropZoneRef}
-              className={`w-3/4 h-64 border-2 border-dashed ${isDragging ? 'border-blue-400 dark:border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-700'} rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 dark:hover:border-gray-600 transition-colors`}
-              onClick={() => fileInputRef.current?.click()}
-              onDragEnter={handleDragEnter}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
+  <ContextMenu>
+    {/* Radix will use <div> itself as the trigger  */}
+    <ContextMenuTrigger asChild>
+      <div
+        className="flex-1 flex items-center justify-center overflow-hidden"
+        style={
+          backgroundImage
+            ? {
+                backgroundImage: `url(${backgroundImage})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }
+            : {}
+        }
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={() => !backgroundImage && fileInputRef.current?.click()}
+      >
+        {!backgroundImage && (
+          <div
+            ref={dropZoneRef}
+            className={`w-3/4 max-w-md h-56 border-2 border-dashed rounded-lg
+              ${isDragging
+                ? "border-blue-400 dark:border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                : "border-gray-300 dark:border-gray-700"}
+              flex flex-col items-center justify-center cursor-pointer`}
+          >
+            {/* icon */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-10 w-10 text-gray-400 dark:text-gray-600 mb-3"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor"
             >
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                className="h-12 w-12 text-gray-400 dark:text-gray-600 mb-3" 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={1.5} 
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" 
-                />
-              </svg>
-              <p className="text-center text-gray-500 dark:text-gray-400 mb-2">Click to upload or drag and drop</p>
-              <p className="text-center text-gray-400 dark:text-gray-600 text-sm">SVG, PNG, JPG or GIF</p>
-            </div>
-          )}
-          <input 
-            type="file" 
-            ref={fileInputRef}
-            accept="image/*" 
-            className="hidden" 
-            onChange={handleImageUpload}
-          />
-        </div>
-      </ContextMenuTrigger>
-      <ContextMenuContent>
-        <ContextMenuItem onClick={() => fileInputRef.current?.click()}>
-          Upload Image
-        </ContextMenuItem>
-        {backgroundImage && (
-          <ContextMenuItem onClick={() => {
-            setBackgroundImage(null);
-            localStorage.removeItem('backgroundImage');
-            toast({
-              title: "Success",
-              description: "Image removed",
-            });
-          }}>
-            Remove Image
-          </ContextMenuItem>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M4 16l4.6-4.6a2 2 0 012.8 0L16 16m-2-2 1.6-1.6a2 2 0 012.8 0L20 14M12 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <p className="text-gray-500 dark:text-gray-400">
+              Click or drag an image here
+            </p>
+          </div>
         )}
-      </ContextMenuContent>
-    </ContextMenu>
-  );
+
+        {/* hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleImageUpload}
+        />
+      </div>
+    </ContextMenuTrigger>
+
+    {/* right‑click menu */}
+    <ContextMenuContent>
+      <ContextMenuItem onSelect={() => fileInputRef.current?.click()}>
+        Upload image
+      </ContextMenuItem>
+      {backgroundImage && (
+        <ContextMenuItem
+          onSelect={() => {
+            setBackgroundImage(null);
+            localStorage.removeItem("backgroundImage");
+            toast({ title: "Success", description: "Image removed" });
+          }}
+        >
+          Remove image
+        </ContextMenuItem>
+      )}
+    </ContextMenuContent>
+  </ContextMenu>
+);
 }
