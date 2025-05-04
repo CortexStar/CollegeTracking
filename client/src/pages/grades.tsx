@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
+import { organizeSemesters } from "@/utils/organizeSemesters";
 import {
   Card,
   CardContent,
@@ -130,36 +131,10 @@ export default function GradesPage() {
     }
   }, []);
 
-  // Determine academic year for each semester based on position or name
-  useEffect(() => {
-    if (semesters.length === 0) return;
-    
-    // Update academic years based on ordering or if it's a summer semester
-    setSemesters(prev => {
-      const updatedSemesters = [...prev].map((semester, index) => {
-        // Check if semester name includes "Summer" - case insensitive
-        if (semester.name && semester.name.toLowerCase().includes('summer')) {
-          return { ...semester, academicYear: 'Summer' as AcademicYear };
-        }
-        
-        // Otherwise assign based on position
-        let academicYear: AcademicYear;
-        if (index < 2) {
-          academicYear = 'Freshman';
-        } else if (index < 4) {
-          academicYear = 'Sophomore';
-        } else if (index < 6) {
-          academicYear = 'Junior';
-        } else {
-          academicYear = 'Senior';
-        }
-        
-        return { ...semester, academicYear };
-      });
-      
-      return updatedSemesters;
-    });
-  }, [semesters.length, semesters]);
+  // Use the organizeSemesters utility to properly organize semesters
+  const organizedSections = useMemo(() => {
+    return organizeSemesters(semesters);
+  }, [semesters]);
 
   // Save semesters to localStorage whenever they change
   useEffect(() => {
