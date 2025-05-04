@@ -109,7 +109,7 @@ export default function GradesPage() {
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  
+
   // Calculate overall GPA and credits
   const overallStats = semesters.reduce((stats, semester) => {
     return {
@@ -118,22 +118,22 @@ export default function GradesPage() {
     };
   }, { totalCredits: 0, totalGradePoints: 0 });
   
-  // Calculate overall GPA with proper rounding to match expectations
-  const calculateOverallGPA = (totalGradePoints: number, totalCredits: number): number => {
-    if (totalCredits <= 0) return 0;
-    // Get the raw GPA with enough decimal places for precision
-    const raw = totalGradePoints / totalCredits;
-    // Return properly rounded to 2 decimal places
-    return Math.round(raw * 100) / 100;
-  };
-  
-  const overallGPA = calculateOverallGPA(overallStats.totalGradePoints, overallStats.totalCredits);
-  
+  const overallGPA = overallStats.totalCredits > 0 
+    ? Math.round((overallStats.totalGradePoints / overallStats.totalCredits) * 100) / 100 
+    : 0;
+
+  // Load saved semesters from localStorage  
+  useEffect(() => {
+    const savedSemesters = localStorage.getItem("gradeSemesters");
+    if (savedSemesters) {
+      setSemesters(JSON.parse(savedSemesters));
+    }
+  }, []);
+
   // Determine academic year for each semester based on position
   useEffect(() => {
     if (semesters.length === 0) return;
     
-    // Update academic years based on ordering
     setSemesters(prev => {
       const updatedSemesters = [...prev].map((semester, index) => {
         let academicYear: AcademicYear;
@@ -153,14 +153,6 @@ export default function GradesPage() {
       return updatedSemesters;
     });
   }, [semesters.length]);
-
-  // Load saved semesters from localStorage
-  useEffect(() => {
-    const savedSemesters = localStorage.getItem("gradeSemesters");
-    if (savedSemesters) {
-      setSemesters(JSON.parse(savedSemesters));
-    }
-  }, []);
 
   // Save semesters to localStorage whenever they change
   useEffect(() => {
@@ -268,6 +260,32 @@ export default function GradesPage() {
   };
 
   // Add a new semester
+  const addEmptySemester = () => {
+    const newSemesterId = Date.now().toString();
+    
+    const newSemester: Semester = {
+      id: newSemesterId,
+      name: "New Semester",
+      courses: [],
+      totalCredits: 0,
+      totalGradePoints: 0,
+      gpa: 0
+    };
+    
+    setSemesters(prev => [...prev, newSemester]);
+    
+    // Start editing the semester name immediately
+    setTimeout(() => {
+      startEditingSemesterName(newSemesterId, "New Semester");
+    }, 100);
+    
+    toast({
+      title: "Success",
+      description: "New semester added. Triple-click name to edit.",
+    });
+  };
+
+  // Add a new semester with course data
   const addSemester = () => {
     if (!newSemesterName.trim()) {
       toast({
@@ -523,16 +541,22 @@ export default function GradesPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Semesters</CardTitle>
-                <div>
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    onClick={addEmptySemester}
+                  >
+                    Add Empty Semester
+                  </Button>
                   <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button>Add Semester</Button>
+                      <Button size="sm">Import Courses</Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-md">
                       <DialogHeader>
-                        <DialogTitle>Add New Semester</DialogTitle>
+                        <DialogTitle>Import Course Data</DialogTitle>
                         <DialogDescription>
-                          Enter a name for the semester and add course information.
+                          Paste in course information to add to a new semester.
                         </DialogDescription>
                       </DialogHeader>
                       <div className="flex flex-col gap-4 py-4">
@@ -574,7 +598,7 @@ export default function GradesPage() {
                 {semesters.length === 0 ? (
                   <div className="text-center py-12">
                     <p className="text-gray-500 dark:text-gray-400">No semesters added yet.</p>
-                    <p className="text-gray-500 dark:text-gray-400 mt-2">Click "Add Semester" to get started.</p>
+                    <p className="text-gray-500 dark:text-gray-400 mt-2">Click "Add Empty Semester" to get started.</p>
                   </div>
                 ) : (
                   <DragDropContext onDragEnd={handleDragEnd}>
@@ -598,285 +622,96 @@ export default function GradesPage() {
                                 <h3 className="text-xl font-bold mb-2 text-gray-700 dark:text-gray-300">
                                   {academicYear} Year
                                 </h3>
-                                <Accordion type="single" collapsible className="w-full mb-4">
-                                  {yearSemesters.map((semester) => {
-                                    // Find the actual index in the complete list
-                                    const semesterIndex = semesters.findIndex(s => s.id === semester.id);
-                                    
-                                    return (
-                                      <Draggable 
-                                        key={semester.id} 
-                                        draggableId={semester.id} 
-                                        index={semesterIndex}
-                                      >
-                                        {(provided) => (
-                                          <div
-                                            ref={provided.innerRef}
-                                            {...provided.draggableProps}
-                                            className="mb-2"
-                                          >
-                                            <AccordionItem value={semester.id} className="border rounded-md overflow-hidden">
-                                              <AccordionTrigger 
-                                                {...provided.dragHandleProps}
-                                                className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800"
-                                              >
-                                                <div className="flex items-center justify-between w-full pr-4">
-                                                  <ContextMenu>
-                                                    <ContextMenuTrigger>
-                                                      <div className="flex items-center">
-                                                        {editingSemesterId === semester.id ? (
-                                                          <form 
-                                                            onSubmit={(e) => {
-                                                              e.preventDefault();
-                                                              saveEditedSemesterName();
-                                                            }}
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            className="flex"
-                                                          >
-                                                            <Input
-                                                              ref={inputRef}
-                                                              className="h-8 min-w-[200px] text-xl font-medium border-0 shadow-none bg-transparent p-0 focus-visible:ring-0"
-                                                              value={editedSemesterName}
-                                                              onChange={(e) => setEditedSemesterName(e.target.value)}
-                                                              onBlur={saveEditedSemesterName}
-                                                              onKeyDown={(e) => {
-                                                                if (e.key === "Escape") {
-                                                                  setEditingSemesterId(null);
-                                                                  setEditedSemesterName("");
-                                                                }
-                                                              }}
-                                                            />
-                                                          </form>
-                                                        ) : (
-                                                          <span 
-                                                            className="text-xl font-medium cursor-text"
-                                                            onClick={(e) => {
-                                                              if (e.detail === 3) { // Triple click
-                                                                e.stopPropagation();
-                                                                startEditingSemesterName(semester.id, semester.name);
-                                                              }
-                                                            }}
-                                                            title="Triple-click to edit"
-                                                          >
-                                                            {semester.name}
-                                                          </span>
-                                                        )}
-                                                      </div>
-                                                    </ContextMenuTrigger>
-                                                    <ContextMenuContent>
-                                                      <ContextMenuItem 
-                                                        onClick={() => {
-                                                          setCurrentSemesterId(semester.id);
-                                                          setIsAddCourseDialogOpen(true);
+                                <div className="space-y-2">
+                                {yearSemesters.map((semester) => {
+                                  // Find the actual index in the complete list
+                                  const semesterIndex = semesters.findIndex(s => s.id === semester.id);
+                                  
+                                  return (
+                                    <Draggable 
+                                      key={semester.id} 
+                                      draggableId={semester.id} 
+                                      index={semesterIndex}
+                                    >
+                                      {(provided) => (
+                                        <div
+                                          ref={provided.innerRef}
+                                          {...provided.draggableProps}
+                                          {...provided.dragHandleProps}
+                                          className="border rounded-md"
+                                        >
+                                          <ContextMenu>
+                                            <ContextMenuTrigger className="block w-full">
+                                              <div className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+                                                <div className="flex justify-between">
+                                                  <div>
+                                                    {editingSemesterId === semester.id ? (
+                                                      <form 
+                                                        onSubmit={(e) => {
+                                                          e.preventDefault();
+                                                          saveEditedSemesterName();
+                                                        }}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                      >
+                                                        <Input
+                                                          ref={inputRef}
+                                                          className="text-lg font-medium"
+                                                          value={editedSemesterName}
+                                                          onChange={(e) => setEditedSemesterName(e.target.value)}
+                                                          onBlur={saveEditedSemesterName}
+                                                        />
+                                                      </form>
+                                                    ) : (
+                                                      <h4 
+                                                        className="text-lg font-medium cursor-text"
+                                                        onClick={(e) => {
+                                                          if (e.detail === 3) {
+                                                            e.stopPropagation();
+                                                            startEditingSemesterName(semester.id, semester.name);
+                                                          }
                                                         }}
                                                       >
-                                                        Add Course
-                                                      </ContextMenuItem>
-                                                      <ContextMenuSeparator />
-                                                      <ContextMenuItem 
-                                                        onClick={() => removeSemester(semester.id)}
-                                                        className="text-red-500 hover:text-red-600 focus:text-red-600"
-                                                      >
-                                                        Delete Semester
-                                                      </ContextMenuItem>
-                                                    </ContextMenuContent>
-                                                  </ContextMenu>
-                                                  <div className="flex items-center gap-8">
-                                                    <div className="text-right">
+                                                        {semester.name}
+                                                      </h4>
+                                                    )}
+                                                  </div>
+                                                  <div className="flex gap-4">
+                                                    <div>
                                                       <span className="text-sm text-gray-500">GPA</span>
-                                                      <p className="font-semibold min-w-[3ch] text-right">{semester.gpa.toFixed(2)}</p>
+                                                      <p className="font-semibold text-right">{semester.gpa.toFixed(2)}</p>
                                                     </div>
-                                                    <div className="text-right">
+                                                    <div>
                                                       <span className="text-sm text-gray-500">Credits</span>
-                                                      <p className="font-semibold min-w-[3ch] text-right">{semester.totalCredits.toFixed(1)}</p>
+                                                      <p className="font-semibold text-right">{semester.totalCredits.toFixed(1)}</p>
                                                     </div>
                                                   </div>
                                                 </div>
-                                              </AccordionTrigger>
-                                              <AccordionContent className="px-4 pt-2 pb-4">
-                                                <Table>
-                                                  <TableHeader>
-                                                    <TableRow>
-                                                      <TableHead className="w-32">Course ID</TableHead>
-                                                      <TableHead>Course Title</TableHead>
-                                                      <TableHead className="w-20 text-center">Grade</TableHead>
-                                                      <TableHead className="w-20 text-center">Credits</TableHead>
-                                                      <TableHead className="w-32 text-center">Grade Points</TableHead>
-                                                    </TableRow>
-                                                  </TableHeader>
-                                                  <TableBody>
-                                                    {semester.courses.map((course, i) => (
-                                                      <TableRow key={i}>
-                                                        <TableCell className="font-medium">
-                                                          {editingCourse && 
-                                                            editingCourse.semesterId === semester.id && 
-                                                            editingCourse.courseIndex === i && 
-                                                            editingCourse.field === 'id' ? (
-                                                            <form 
-                                                              onSubmit={(e) => {
-                                                                e.preventDefault();
-                                                                saveEditedCourse();
-                                                              }}
-                                                              onClick={(e) => e.stopPropagation()}
-                                                              className="flex"
-                                                            >
-                                                              <Input
-                                                                ref={inputRef}
-                                                                className="h-8 border-0 shadow-none bg-transparent p-0 focus-visible:ring-0"
-                                                                value={editingCourse.value}
-                                                                onChange={(e) => setEditingCourse({...editingCourse, value: e.target.value})}
-                                                                onBlur={saveEditedCourse}
-                                                                onKeyDown={(e) => {
-                                                                  if (e.key === "Escape") {
-                                                                    setEditingCourse(null);
-                                                                  }
-                                                                }}
-                                                              />
-                                                            </form>
-                                                          ) : (
-                                                            <span 
-                                                              onDoubleClick={(e) => {
-                                                                e.stopPropagation();
-                                                                startEditingCourse(semester.id, i, 'id', course.id);
-                                                              }}
-                                                              className="cursor-text block"
-                                                            >
-                                                              {course.id}
-                                                            </span>
-                                                          )}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                          {editingCourse && 
-                                                            editingCourse.semesterId === semester.id && 
-                                                            editingCourse.courseIndex === i && 
-                                                            editingCourse.field === 'title' ? (
-                                                            <form 
-                                                              onSubmit={(e) => {
-                                                                e.preventDefault();
-                                                                saveEditedCourse();
-                                                              }}
-                                                              onClick={(e) => e.stopPropagation()}
-                                                              className="flex"
-                                                            >
-                                                              <Input
-                                                                ref={inputRef}
-                                                                className="h-8 w-full border-0 shadow-none bg-transparent p-0 focus-visible:ring-0"
-                                                                value={editingCourse.value}
-                                                                onChange={(e) => setEditingCourse({...editingCourse, value: e.target.value})}
-                                                                onBlur={saveEditedCourse}
-                                                                onKeyDown={(e) => {
-                                                                  if (e.key === "Escape") {
-                                                                    setEditingCourse(null);
-                                                                  }
-                                                                }}
-                                                              />
-                                                            </form>
-                                                          ) : (
-                                                            <span 
-                                                              onDoubleClick={(e) => {
-                                                                e.stopPropagation();
-                                                                startEditingCourse(semester.id, i, 'title', course.title);
-                                                              }}
-                                                              className="cursor-text block"
-                                                            >
-                                                              {course.title}
-                                                            </span>
-                                                          )}
-                                                        </TableCell>
-                                                        <TableCell className="text-center">
-                                                          {editingCourse && 
-                                                            editingCourse.semesterId === semester.id && 
-                                                            editingCourse.courseIndex === i && 
-                                                            editingCourse.field === 'grade' ? (
-                                                            <form 
-                                                              onSubmit={(e) => {
-                                                                e.preventDefault();
-                                                                saveEditedCourse();
-                                                              }}
-                                                              onClick={(e) => e.stopPropagation()}
-                                                              className="flex justify-center"
-                                                            >
-                                                              <Input
-                                                                ref={inputRef}
-                                                                className="h-8 w-16 border-0 shadow-none bg-transparent p-0 text-center focus-visible:ring-0"
-                                                                value={editingCourse.value}
-                                                                onChange={(e) => setEditingCourse({...editingCourse, value: e.target.value})}
-                                                                onBlur={saveEditedCourse}
-                                                                onKeyDown={(e) => {
-                                                                  if (e.key === "Escape") {
-                                                                    setEditingCourse(null);
-                                                                  }
-                                                                }}
-                                                              />
-                                                            </form>
-                                                          ) : (
-                                                            <span 
-                                                              onDoubleClick={(e) => {
-                                                                e.stopPropagation();
-                                                                startEditingCourse(semester.id, i, 'grade', course.grade);
-                                                              }}
-                                                              className="cursor-text block"
-                                                            >
-                                                              {course.grade}
-                                                            </span>
-                                                          )}
-                                                        </TableCell>
-                                                        <TableCell className="text-center">
-                                                          {editingCourse && 
-                                                            editingCourse.semesterId === semester.id && 
-                                                            editingCourse.courseIndex === i && 
-                                                            editingCourse.field === 'credits' ? (
-                                                            <form 
-                                                              onSubmit={(e) => {
-                                                                e.preventDefault();
-                                                                saveEditedCourse();
-                                                              }}
-                                                              onClick={(e) => e.stopPropagation()}
-                                                              className="flex justify-center"
-                                                            >
-                                                              <Input
-                                                                ref={inputRef}
-                                                                className="h-8 w-16 border-0 shadow-none bg-transparent p-0 text-center focus-visible:ring-0"
-                                                                value={editingCourse.value}
-                                                                type="number"
-                                                                min="0.5"
-                                                                step="0.5"
-                                                                onChange={(e) => setEditingCourse({...editingCourse, value: e.target.value})}
-                                                                onBlur={saveEditedCourse}
-                                                                onKeyDown={(e) => {
-                                                                  if (e.key === "Escape") {
-                                                                    setEditingCourse(null);
-                                                                  }
-                                                                }}
-                                                              />
-                                                            </form>
-                                                          ) : (
-                                                            <span 
-                                                              onDoubleClick={(e) => {
-                                                                e.stopPropagation();
-                                                                startEditingCourse(semester.id, i, 'credits', course.credits.toString());
-                                                              }}
-                                                              className="cursor-text block"
-                                                            >
-                                                              {course.credits.toFixed(1)}
-                                                            </span>
-                                                          )}
-                                                        </TableCell>
-                                                        <TableCell className="text-center">
-                                                          {(course.credits * course.gradePoints).toFixed(2)}
-                                                        </TableCell>
-                                                      </TableRow>
-                                                    ))}
-                                                  </TableBody>
-                                                </Table>
-                                              </AccordionContent>
-                                            </AccordionItem>
-                                          </div>
-                                        )}
-                                      </Draggable>
-                                    );
-                                  })}
-                                </Accordion>
+                                              </div>
+                                            </ContextMenuTrigger>
+                                            <ContextMenuContent>
+                                              <ContextMenuItem 
+                                                onClick={() => {
+                                                  setCurrentSemesterId(semester.id);
+                                                  setIsAddCourseDialogOpen(true);
+                                                }}
+                                              >
+                                                Add Course
+                                              </ContextMenuItem>
+                                              <ContextMenuSeparator />
+                                              <ContextMenuItem 
+                                                onClick={() => removeSemester(semester.id)}
+                                                className="text-red-500"
+                                              >
+                                                Delete Semester
+                                              </ContextMenuItem>
+                                            </ContextMenuContent>
+                                          </ContextMenu>
+                                        </div>
+                                      )}
+                                    </Draggable>
+                                  );
+                                })}
+                                </div>
                               </div>
                             );
                           })}
@@ -923,17 +758,13 @@ export default function GradesPage() {
               </CardContent>
             </Card>
             
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Grade Point Scale</CardTitle>
-                <Button 
-                  variant="ghost" 
-                  onClick={() => setIsGradeScaleOpen(!isGradeScaleOpen)}
-                >
-                  {isGradeScaleOpen ? "Hide" : "Show"}
-                </Button>
-              </CardHeader>
-              <Collapsible open={isGradeScaleOpen} onOpenChange={setIsGradeScaleOpen}>
+            <Card className="mt-2">
+              <Collapsible>
+                <CollapsibleTrigger className="w-full">
+                  <CardHeader className="py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <CardTitle className="text-base">Grade Point Scale</CardTitle>
+                  </CardHeader>
+                </CollapsibleTrigger>
                 <CollapsibleContent>
                   <CardContent>
                     <Table>
