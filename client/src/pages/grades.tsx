@@ -208,15 +208,19 @@ export default function GradesPage() {
         
         // Now get the text after the course ID
         let title = '';
-        const startIndex = cleanLine.indexOf(courseId) + courseId.length;
-        const remainingText = cleanLine.substring(startIndex).trim();
         
-        if (remainingText) {
-          // Check if there's a separator like dash or colon
-          if (remainingText.startsWith('-') || remainingText.startsWith(':')) {
-            title = remainingText.substring(1).trim();
-          } else {
-            title = remainingText;
+        // Try to find a pattern like "ACG2021 - Intro Finan Accountng" or "ACG2021 Intro Finan Accountng"
+        const titleMatch = cleanLine.match(new RegExp(`${courseId}\\s*([-:])\\s*(.+)`, 'i')) || 
+                           cleanLine.match(new RegExp(`${courseId}\\s+(.+)`, 'i'));
+        
+        if (titleMatch) {
+          // If we matched with a separator (dash or colon)
+          if (titleMatch.length === 3 && titleMatch[2]) {
+            title = titleMatch[2].trim();
+          } 
+          // If we matched without a separator
+          else if (titleMatch.length === 2 && titleMatch[1]) {
+            title = titleMatch[1].trim();
           }
         }
         
