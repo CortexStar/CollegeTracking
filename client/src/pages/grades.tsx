@@ -946,7 +946,7 @@ export default function GradesPage() {
       <Collapsible 
         open={isGradeScaleOpen} 
         onOpenChange={setIsGradeScaleOpen}
-        className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg w-64 z-10"
+        className="mt-8 flex justify-center bg-white dark:bg-gray-800 rounded-lg shadow-lg w-64 z-10 mx-auto"
       >
         <CollapsibleTrigger asChild>
           <Button variant="ghost" size="sm" className="w-full flex justify-between items-center p-4">
