@@ -6,6 +6,7 @@ import {
   ContextMenuTrigger
 } from "@/components/ui/context-menu";
 import { toast } from "@/hooks/use-toast";
+import Layout from "@/components/layout";
 
 export default function Landing() {
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
