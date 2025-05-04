@@ -182,167 +182,102 @@ export default function GradesPage() {
   const parseCourseData = (rawData: string): Course[] => {
     if (!rawData || !rawData.trim()) return [];
     
-    const lines = rawData.trim().split(/\n|\r\n|\r/);
+    // Constants for regex patterns
+    const COURSE_CODE_RE = /\b[A-Z]{3,4}\d{4}\b/;
+    const GRADE_RE = /^(?:A|A-|B\+|B|B-|C\+|C|C-|D\+|D|D-|F|--)(?:\s|$)/i;
+    
+    // Normalize input: standardize line breaks, trim whitespace, remove empty lines
+    const normalizedLines = rawData
+      .replace(/\r\n?/g, '\n') // normalize line endings
+      .split('\n')
+      .map(line => line.trim())
+      .filter(Boolean); // remove empty lines
+    
     const courses: Course[] = [];
+    let cursor = 0;
     
-    let currentCourse: Partial<Course> = {};
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      
-      if (!line) continue;
-      
-      // Try to identify if this is a new course line with course ID pattern
-      const courseIdMatch = line.match(/^([A-Z]{2,4}\d{4}[A-Z]?)/);
-      if (courseIdMatch) {
-        // Save previous course if exists
-        if (currentCourse.id) {
-          finalizeCourse();
-        }
-        
-        // Extract course ID - remove any parenthetical numbers
-        const courseId = courseIdMatch[1].trim().replace(/\(\d+\)/g, '').trim();
-        
-        // Try to extract title - first remove any parenthetical numbers from the whole line
-        const cleanLine = line.replace(/\(\d+\)/g, '').trim();
-        
-        // Now get the text after the course ID
-        let title = '';
-        
-        // Try to find a pattern like "ACG2021 - Intro Finan Accountng" or "ACG2021 Intro Finan Accountng"
-        const titleMatch = cleanLine.match(new RegExp(`${courseId}\\s*([-:])\\s*(.+)`, 'i')) || 
-                           cleanLine.match(new RegExp(`${courseId}\\s+(.+)`, 'i'));
-        
-        if (titleMatch) {
-          // If we matched with a separator (dash or colon)
-          if (titleMatch.length === 3 && titleMatch[2]) {
-            title = titleMatch[2].trim();
-          } 
-          // If we matched without a separator
-          else if (titleMatch.length === 2 && titleMatch[1]) {
-            title = titleMatch[1].trim();
-          }
-        }
-        
-        currentCourse = {
-          id: courseId,
-          title: title
-        };
-      } 
-      // Check if this line has a grade pattern (letter grade)
-      else if (/^[ABCDF][+-]?$/i.test(line)) {
-        const grade = line.toUpperCase();
-        currentCourse.grade = grade;
-        currentCourse.gradePoints = gradePointValues[grade] || 0;
+    while (cursor < normalizedLines.length) {
+      // Step 1: Find the next line containing a course code
+      while (cursor < normalizedLines.length && !COURSE_CODE_RE.test(normalizedLines[cursor])) {
+        cursor += 1;
       }
-      // Check if this is a number that could be credits or grade points
-      else if (/^(\d+(\.\d+)?)$/.test(line)) {
-        const value = parseFloat(line);
-        
-        // If value is between 1-5, it's likely credits
-        if (value >= 1 && value <= 5) {
-          currentCourse.credits = value;
-        } 
-        // If value is between 0-4, it could be grade points or credits
-        else if (value >= 0 && value <= 4) {
-          // If we already have credits, this is grade points
-          if (currentCourse.credits !== undefined) {
-            currentCourse.gradePoints = value;
-          } else {
-            currentCourse.credits = value;
+      
+      if (cursor >= normalizedLines.length) break; // no more courses
+      
+      // Extract course ID
+      const codeLine = normalizedLines[cursor++];
+      const idMatch = codeLine.match(COURSE_CODE_RE);
+      const id = idMatch ? idMatch[0] : 'UNKNOWN';
+      
+      // Step 2: Course title - first non-empty line after the code line
+      let title = '';
+      if (cursor < normalizedLines.length) {
+        // Check if the next line is a title (not a grade or number)
+        if (!GRADE_RE.test(normalizedLines[cursor]) && !/^[-+]?\d/.test(normalizedLines[cursor])) {
+          title = normalizedLines[cursor++];
+        } else {
+          // Look for title in the course ID line - extract anything after the course code
+          const titleInCodeLine = codeLine.substring(codeLine.indexOf(id) + id.length).trim();
+          if (titleInCodeLine) {
+            // Remove leading separators like dash or colon
+            title = titleInCodeLine.replace(/^[-:]\s*/, '');
           }
         }
       }
-      // If line contains "credits" or "credit", try to extract credit value
-      else if (/credits?/i.test(line)) {
-        const creditMatch = line.match(/(\d+(\.\d+)?)\s*credits?/i);
-        if (creditMatch) {
-          currentCourse.credits = parseFloat(creditMatch[1]);
-        }
-      }
-      // Try to extract grade if line contains grade patterns
-      else if (/grade|[A-F][+-]?/i.test(line)) {
-        const gradeMatch = line.match(/([A-F][+-]?)/i);
-        if (gradeMatch) {
-          const grade = gradeMatch[1].toUpperCase();
-          currentCourse.grade = grade;
-          currentCourse.gradePoints = gradePointValues[grade] || 0;
-        }
-      }
-      // If can't identify line type and we have a course ID but no title,
-      // assume this is a title line
-      else if (currentCourse.id && !currentCourse.title) {
-        currentCourse.title = line;
-      }
-      // If we have a course with ID but the line looks like text, 
-      // it might be part of the title or a course description
-      else if (currentCourse.id && line.length > 3) {
-        // If title is short, append this line
-        if (currentCourse.title && currentCourse.title.length < 30) {
-          currentCourse.title += " " + line;
-        }
+      
+      // Step 3: Find grade - search for a pattern that looks like a grade
+      let grade = 'C'; // Default to C if no grade found
+      while (
+        cursor < normalizedLines.length && 
+        !GRADE_RE.test(normalizedLines[cursor]) && 
+        !/^[-+]?\d/.test(normalizedLines[cursor]) &&
+        !COURSE_CODE_RE.test(normalizedLines[cursor])
+      ) {
+        cursor += 1;
       }
       
-      // If this is the last line, finalize the current course
-      if (i === lines.length - 1 && currentCourse.id) {
-        finalizeCourse();
-      }
-    }
-    
-    function finalizeCourse() {
-      // If we have an ID but no title, use ID as title
-      if (currentCourse.id && !currentCourse.title) {
-        currentCourse.title = currentCourse.id;
+      if (cursor < normalizedLines.length && GRADE_RE.test(normalizedLines[cursor])) {
+        grade = normalizedLines[cursor++].toUpperCase();
       }
       
-      // If we have a grade but no grade points, calculate from grade
-      if (currentCourse.grade && currentCourse.gradePoints === undefined) {
-        currentCourse.gradePoints = gradePointValues[currentCourse.grade] || 0;
-      }
-      
-      // If we have grade points but no grade, use closest grade
-      if (currentCourse.gradePoints !== undefined && !currentCourse.grade) {
-        // Find closest grade
-        const pointsValue = currentCourse.gradePoints;
-        let closestGrade = "F";
-        let smallestDiff = 4.0;
-        
-        Object.entries(gradePointValues).forEach(([grade, points]) => {
-          const diff = Math.abs(points - pointsValue);
-          if (diff < smallestDiff) {
-            smallestDiff = diff;
-            closestGrade = grade;
+      // Step 4: Collect numeric values until we hit the next course code
+      const numericValues: number[] = [];
+      while (cursor < normalizedLines.length && !COURSE_CODE_RE.test(normalizedLines[cursor])) {
+        // Try to extract a number from the current line
+        const numMatch = normalizedLines[cursor].match(/[-+]?(\d+(\.\d+)?)/);
+        if (numMatch) {
+          const value = parseFloat(numMatch[1]);
+          if (!isNaN(value)) {
+            numericValues.push(value);
           }
-        });
-        
-        currentCourse.grade = closestGrade;
+        }
+        cursor += 1;
       }
       
-      // Set defaults if missing - but only if we have a course ID
-      if (currentCourse.id) {
-        // Default grade is C if none specified
-        if (!currentCourse.grade) {
-          currentCourse.grade = "C";
-          currentCourse.gradePoints = gradePointValues["C"] || 2.0;
-        }
-        
-        // Default credits is 3.0 if none specified
-        if (currentCourse.credits === undefined) {
-          currentCourse.credits = 3.0;
-        }
-        
-        // Now complete, add to courses
-        courses.push({
-          id: currentCourse.id,
-          title: currentCourse.title || currentCourse.id,
-          grade: currentCourse.grade,
-          credits: currentCourse.credits,
-          gradePoints: currentCourse.gradePoints || gradePointValues[currentCourse.grade] || 0
-        });
+      // Step 5: Determine which number is credits
+      // Prefer integers between 1-5 as credits
+      let credits = 3.0; // Default
+      const creditCandidate = numericValues.find(n => n % 1 === 0 && n >= 1 && n <= 5);
+      if (creditCandidate !== undefined) {
+        credits = creditCandidate;
+      } else if (numericValues.length > 0) {
+        // If no good candidate, use the last number
+        credits = numericValues[numericValues.length - 1];
       }
       
-      // Reset for next course
-      currentCourse = {};
+      // Step 6: Calculate grade points
+      const gradePoints = gradePointValues[grade] !== undefined ? 
+                          parseFloat((credits * gradePointValues[grade]).toFixed(2)) : 
+                          credits * 2.0; // Default to C (2.0) if grade not recognized
+      
+      // Add the parsed course
+      courses.push({
+        id,
+        title: title || id, // Use ID as title if no title found
+        grade,
+        credits,
+        gradePoints
+      });
     }
     
     return courses;
