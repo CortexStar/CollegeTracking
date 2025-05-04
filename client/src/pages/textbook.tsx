@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FileText, Printer } from "lucide-react";
 import TextbookToc from "@/components/textbook-toc";
 import { Input } from "@/components/ui/input";
-import { getBook, updateBook, BookMeta } from "@/lib/bookStore";
+import { getBook, updateBook, BookMeta, initializeDefaultBooks } from "@/lib/bookStore";
 import { useToast } from "@/hooks/use-toast";
 
 export default function TextbookPage() {
@@ -17,10 +17,22 @@ export default function TextbookPage() {
   const { toast } = useToast();
   
   useEffect(() => {
+    // Initialize the default books to ensure they exist
+    initializeDefaultBooks();
+    
     // Find the default linear algebra book
     const defaultBook = getBook("linear-algebra-default");
+    
     if (defaultBook) {
       setBook(defaultBook);
+    } else {
+      // If not found, we'll create a minimal book object
+      setBook({
+        id: "linear-algebra-default",
+        title: "Introduction to Linear Algebra",
+        author: "Gilbert Strang",
+        url: "/linear-algebra-book.pdf"
+      });
     }
   }, []);
   
@@ -119,7 +131,7 @@ export default function TextbookPage() {
                     variant="outline" 
                     size="sm" 
                     className="flex items-center gap-1"
-                    onClick={() => window.open('/linear-algebra-book.pdf', '_blank')}
+                    onClick={() => window.open(book.url, '_blank')}
                   >
                     <FileText className="h-4 w-4" />
                     Full PDF
@@ -136,7 +148,7 @@ export default function TextbookPage() {
                 </div>
                 <div className="w-full">
                   <embed 
-                    src="/linear-algebra-book.pdf" 
+                    src={book.url} 
                     type="application/pdf"
                     width="100%" 
                     height="1200px" 
