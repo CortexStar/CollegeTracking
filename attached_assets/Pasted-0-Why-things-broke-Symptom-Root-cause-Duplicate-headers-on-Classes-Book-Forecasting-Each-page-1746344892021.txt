@@ -1,0 +1,259 @@
+0. Why things broke
+Symptom	Root cause
+Duplicate headers on “Classes / Book / Forecasting”	Each page kept its own <Header> and you wrapped the whole app in a Layout that adds another one.
+Landing image + right‑click menu disappeared	The quick layout snippet replaced your custom <main> (with the ContextMenu) by an empty <main>; nothing inside, so no image.
+Home page layout shifted	Same: the original flex / fixed block was removed.
+
+The fix is simply “one Layout, zero other headers” and put the old Landing markup back.
+
+1. components/Header.tsx (unchanged but pasted here for clarity)
+tsx
+Copy
+Edit
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+
+export default function Header() {
+  return (
+    <header className="h-16 w-full bg-slate-800 text-slate-100">
+      <div className="flex h-full items-center gap-4 px-4">
+        <Link href="/" className="text-lg font-bold tracking-wide">
+          COURSE CHARTS
+        </Link>
+
+        <nav className="flex gap-2">
+          <Button asChild size="sm" variant="secondary">
+            <Link href="/classes">📋 Classes</Link>
+          </Button>
+          <Button asChild size="sm" variant="secondary">
+            <Link href="/book">📕 Book</Link>
+          </Button>
+          <Button asChild size="sm" variant="secondary">
+            <Link href="/grades">📊 Grades & Forecasting</Link>
+          </Button>
+        </nav>
+
+        <div className="ml-auto flex items-center">
+          <Button size="icon" variant="ghost">
+            <span className="i-lucide-rotate-cw h-5 w-5" />
+          </Button>
+        </div>
+      </div>
+    </header>
+  );
+}
+2. components/Footer.tsx
+tsx
+Copy
+Edit
+export default function Footer() {
+  return (
+    <footer className="h-16 w-full bg-slate-800 text-slate-100">
+      <div className="flex h-full items-center px-4">
+        <span className="text-sm">©{new Date().getFullYear()} COURSE CHARTS</span>
+        <div className="ml-auto flex gap-4 text-sm">
+          <a href="/privacy" className="hover:underline">Privacy</a>
+          <a href="/terms"   className="hover:underline">Terms</a>
+        </div>
+      </div>
+    </footer>
+  );
+}
+3. components/Layout.tsx – the only place that imports Header & Footer
+tsx
+Copy
+Edit
+import Header from "@/components/header";
+import Footer from "@/components/footer";
+
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
+      <Header />
+      <main className="flex-1 overflow-hidden">{children}</main>
+      <Footer />
+    </div>
+  );
+}
+4‑A. Next app router (app/layout.tsx)
+tsx
+Copy
+Edit
+import "@/styles/globals.css";
+import Layout from "@/components/layout";
+
+export const metadata = { title: "Course Charts" };
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <Layout>{children}</Layout>
+      </body>
+    </html>
+  );
+}
+4‑B. Next pages‑router (pages/_app.tsx)
+tsx
+Copy
+Edit
+import type { AppProps } from "next/app";
+import "@/styles/globals.css";
+import Layout from "@/components/layout";
+
+export default function MyApp({ Component, pageProps }: AppProps) {
+  return (
+    <Layout>
+      <Component {...pageProps} />
+    </Layout>
+  );
+}
+Important: Delete any import Header … / Footer … lines from every individual page.
+They live only in Layout now, so duplication can’t happen.
+
+5. pages/landing.tsx (or app/(site)/landing/page.tsx, etc.)
+The exact logic you had before, but without a stray Header/Footer import because the layout provides them.
+
+tsx
+Copy
+Edit
+import {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+} from "@/components/ui/context-menu";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
+import React, { useState, useRef, useEffect, DragEvent } from "react";
+
+export default function Landing() {
+  const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef   = useRef<HTMLDivElement>(null);
+
+  /* ---------- helpers identical to your original version ---------- */
+
+  const processFile = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload an image file",
+        variant: "destructive",
+      });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+      const data = e.target?.result as string;
+      localStorage.setItem("backgroundImage", data);
+      setBackgroundImage(data);
+      toast({ title: "Success", description: "Image uploaded successfully" });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  /* drag events … unchanged … */
+
+  useEffect(() => {
+    const saved = localStorage.getItem("backgroundImage");
+    if (saved) setBackgroundImage(saved);
+  }, []);
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div
+          className="flex-1 flex items-center justify-center overflow-hidden"
+          style={
+            backgroundImage
+              ? {
+                  backgroundImage: `url(${backgroundImage})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }
+              : {}
+          }
+          onDragEnter={e => { e.preventDefault(); setIsDragging(true); }}
+          onDragOver={e => e.preventDefault()}
+          onDragLeave={e => { e.preventDefault(); setIsDragging(false); }}
+          onDrop={e => {
+            e.preventDefault(); setIsDragging(false);
+            e.dataTransfer.files[0] && processFile(e.dataTransfer.files[0]);
+          }}
+        >
+          {!backgroundImage && (
+            <div
+              ref={dropZoneRef}
+              className={`w-3/4 max-w-md h-56 border-2 border-dashed rounded-lg
+                ${isDragging
+                  ? "border-blue-400 dark:border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                  : "border-gray-300 dark:border-gray-700"}
+                flex flex-col items-center justify-center cursor-pointer`}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-10 w-10 text-gray-400 dark:text-gray-600 mb-3"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                  d="M4 16l4.6-4.6a2 2 0 012.8 0L16 16m-2-2 1.6-1.6a2 2 0 012.8 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <p className="text-gray-500 dark:text-gray-400">Click or drag image here</p>
+            </div>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={e => e.target.files?.[0] && processFile(e.target.files[0])}
+          />
+        </div>
+      </ContextMenuTrigger>
+
+      <ContextMenuContent>
+        <ContextMenuItem onSelect={() => fileInputRef.current?.click()}>
+          Upload image
+        </ContextMenuItem>
+        {backgroundImage && (
+          <ContextMenuItem
+            onSelect={() => {
+              setBackgroundImage(null);
+              localStorage.removeItem("backgroundImage");
+              toast({ title: "Success", description: "Image removed" });
+            }}
+          >
+            Remove image
+          </ContextMenuItem>
+        )}
+      </ContextMenuContent>
+    </ContextMenu>
+  );
+}
+6. Every other page (classes.tsx, book.tsx, grades.tsx, …)
+Keep only your page‑specific JSX. Do not import Header or Footer.
+Layout will wrap them for you, so nothing duplicates.
+
+tsx
+Copy
+Edit
+export default function ClassesPage() {
+  return (
+    <div className="p-6">
+      {/* classes UI… */}
+    </div>
+  );
+}
+7. Quick test checklist
+Landing – drag or right‑click → upload → image fills window under the single header.
+
+Navigate to Classes / Book / Forecasting – left‑aligned header once, footer once.
+
+Resize the window – header & footer stick, middle column behaves.
+
+If any page still shows two headers you’ll find a stray import Header … line left in that file—delete it.
+
+That’s it 🎉. The layout is now single‑source and your picture uploader is back in action.
