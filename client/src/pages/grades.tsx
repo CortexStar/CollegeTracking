@@ -334,6 +334,12 @@ export default function GradesPage() {
   const addCourseToSemester = () => {
     if (!currentSemesterId) return;
     
+    // If no course data was provided, just close the dialog
+    if (!newCourseData.trim()) {
+      setIsAddCourseDialogOpen(false);
+      return;
+    }
+    
     const courses = parseCourseData(newCourseData);
     
     if (courses.length === 0) {
@@ -689,10 +695,6 @@ export default function GradesPage() {
                                                           <span className="text-sm text-gray-500">Credits</span>
                                                           <p className="font-semibold min-w-[3ch] text-right">{semester.totalCredits.toFixed(1)}</p>
                                                         </div>
-                                                        <div className="text-right">
-                                                          <span className="text-sm text-gray-500">Grade Points</span>
-                                                          <p className="font-semibold min-w-[3ch] text-right">{semester.totalGradePoints.toFixed(1)}</p>
-                                                        </div>
                                                       </div>
                                                     </div>
                                                   </AccordionTrigger>
@@ -898,7 +900,8 @@ export default function GradesPage() {
                                                           </TableRow>
                                                         ))}
                                                         <TableRow className="bg-gray-50 dark:bg-gray-800 font-medium">
-                                                          <TableCell colSpan={3} className="text-right">Total:</TableCell>
+                                                          <TableCell className="font-medium">Total:</TableCell>
+                                                          <TableCell colSpan={2}></TableCell>
                                                           <TableCell className="text-center">{semester.totalCredits.toFixed(1)}</TableCell>
                                                           <TableCell className="text-center">{semester.totalGradePoints.toFixed(1)}</TableCell>
                                                         </TableRow>
