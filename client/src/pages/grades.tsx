@@ -175,14 +175,13 @@ export default function GradesPage() {
     
     setSemesters(reorderedSemesters);
     
-    toast({
-      title: "Success",
-      description: "Semester order updated",
-    });
+    // Order updated silently
   };
 
   // Parse course data from raw text
   const parseCourseData = (rawData: string): Course[] => {
+    if (!rawData || !rawData.trim()) return [];
+    
     const lines = rawData.trim().split(/\n|\r\n|\r/);
     const courses: Course[] = [];
     
@@ -193,42 +192,86 @@ export default function GradesPage() {
       
       if (!line) continue;
       
-      // Parse course ID and title (assuming format like "ECO2023 - Prin Microeconomics")
-      if (/^[A-Z]{2,4}\d{4}/.test(line)) {
+      // Try to identify if this is a new course line with course ID pattern
+      const courseIdMatch = line.match(/^([A-Z]{2,4}\d{4}[A-Z]?)/);
+      if (courseIdMatch) {
         // Save previous course if exists
         if (currentCourse.id) {
           finalizeCourse();
         }
         
-        // Start new course
-        const parts = line.split(' - ');
-        // Remove numbers in parentheses from course ID
-        let courseId = parts[0].trim();
-        courseId = courseId.replace(/\(\d+\)/g, '').trim();
+        // Extract course ID
+        const courseId = courseIdMatch[1].trim().replace(/\(\d+\)/g, '').trim();
+        
+        // Try to extract title - could be separated by a dash, colon, or just a space
+        let title = '';
+        const remainingText = line.substring(courseIdMatch[0].length).trim();
+        
+        if (remainingText) {
+          // Check if there's a separator like dash or colon
+          if (remainingText.startsWith('-') || remainingText.startsWith(':')) {
+            title = remainingText.substring(1).trim();
+          } else {
+            title = remainingText;
+          }
+        }
         
         currentCourse = {
           id: courseId,
-          title: parts.length > 1 ? parts[1].trim() : '',
+          title: title
         };
       } 
-      // Parse standalone title if on its own line
+      // Check if this line has a grade pattern (letter grade)
+      else if (/^[ABCDF][+-]?$/i.test(line)) {
+        const grade = line.toUpperCase();
+        currentCourse.grade = grade;
+        currentCourse.gradePoints = gradePointValues[grade] || 0;
+      }
+      // Check if this is a number that could be credits or grade points
+      else if (/^(\d+(\.\d+)?)$/.test(line)) {
+        const value = parseFloat(line);
+        
+        // If value is between 1-5, it's likely credits
+        if (value >= 1 && value <= 5) {
+          currentCourse.credits = value;
+        } 
+        // If value is between 0-4, it could be grade points or credits
+        else if (value >= 0 && value <= 4) {
+          // If we already have credits, this is grade points
+          if (currentCourse.credits !== undefined) {
+            currentCourse.gradePoints = value;
+          } else {
+            currentCourse.credits = value;
+          }
+        }
+      }
+      // If line contains "credits" or "credit", try to extract credit value
+      else if (/credits?/i.test(line)) {
+        const creditMatch = line.match(/(\d+(\.\d+)?)\s*credits?/i);
+        if (creditMatch) {
+          currentCourse.credits = parseFloat(creditMatch[1]);
+        }
+      }
+      // Try to extract grade if line contains grade patterns
+      else if (/grade|[A-F][+-]?/i.test(line)) {
+        const gradeMatch = line.match(/([A-F][+-]?)/i);
+        if (gradeMatch) {
+          const grade = gradeMatch[1].toUpperCase();
+          currentCourse.grade = grade;
+          currentCourse.gradePoints = gradePointValues[grade] || 0;
+        }
+      }
+      // If can't identify line type and we have a course ID but no title,
+      // assume this is a title line
       else if (currentCourse.id && !currentCourse.title) {
         currentCourse.title = line;
       }
-      // Parse grade
-      else if (/^[ABCDEF][+-]?$/.test(line)) {
-        currentCourse.grade = line;
-        currentCourse.gradePoints = gradePointValues[line] || 0;
-      }
-      // Parse credit value (assumed to be a number followed possibly by decimal)
-      else if (/^\d+(\.\d+)?$/.test(line)) {
-        const value = parseFloat(line);
-        
-        // If we already have credits and this is likely grade points
-        if (currentCourse.credits && !currentCourse.gradePoints && value <= 4.0) {
-          currentCourse.gradePoints = value;
-        } else {
-          currentCourse.credits = value;
+      // If we have a course with ID but the line looks like text, 
+      // it might be part of the title or a course description
+      else if (currentCourse.id && line.length > 3) {
+        // If title is short, append this line
+        if (currentCourse.title && currentCourse.title.length < 30) {
+          currentCourse.title += " " + line;
         }
       }
       
@@ -239,18 +282,55 @@ export default function GradesPage() {
     }
     
     function finalizeCourse() {
-      // Calculate grade points if not explicitly provided
-      if (currentCourse.grade && !currentCourse.gradePoints) {
+      // If we have an ID but no title, use ID as title
+      if (currentCourse.id && !currentCourse.title) {
+        currentCourse.title = currentCourse.id;
+      }
+      
+      // If we have a grade but no grade points, calculate from grade
+      if (currentCourse.grade && currentCourse.gradePoints === undefined) {
         currentCourse.gradePoints = gradePointValues[currentCourse.grade] || 0;
       }
       
-      // Ensure all required fields are present
-      if (currentCourse.id && 
-          currentCourse.title && 
-          currentCourse.grade && 
-          currentCourse.credits !== undefined && 
-          currentCourse.gradePoints !== undefined) {
-        courses.push(currentCourse as Course);
+      // If we have grade points but no grade, use closest grade
+      if (currentCourse.gradePoints !== undefined && !currentCourse.grade) {
+        // Find closest grade
+        const pointsValue = currentCourse.gradePoints;
+        let closestGrade = "F";
+        let smallestDiff = 4.0;
+        
+        Object.entries(gradePointValues).forEach(([grade, points]) => {
+          const diff = Math.abs(points - pointsValue);
+          if (diff < smallestDiff) {
+            smallestDiff = diff;
+            closestGrade = grade;
+          }
+        });
+        
+        currentCourse.grade = closestGrade;
+      }
+      
+      // Set defaults if missing - but only if we have a course ID
+      if (currentCourse.id) {
+        // Default grade is C if none specified
+        if (!currentCourse.grade) {
+          currentCourse.grade = "C";
+          currentCourse.gradePoints = gradePointValues["C"] || 2.0;
+        }
+        
+        // Default credits is 3.0 if none specified
+        if (currentCourse.credits === undefined) {
+          currentCourse.credits = 3.0;
+        }
+        
+        // Now complete, add to courses
+        courses.push({
+          id: currentCourse.id,
+          title: currentCourse.title || currentCourse.id,
+          grade: currentCourse.grade,
+          credits: currentCourse.credits,
+          gradePoints: currentCourse.gradePoints || gradePointValues[currentCourse.grade] || 0
+        });
       }
       
       // Reset for next course
@@ -285,11 +365,6 @@ export default function GradesPage() {
           startEditingSemesterName(newSemesterId, "New Semester");
         }, 100);
       }
-      
-      toast({
-        title: "Success",
-        description: "New empty semester added",
-      });
       return;
     }
 
@@ -324,10 +399,7 @@ export default function GradesPage() {
     setRawCourseData("");
     setIsDialogOpen(false);
     
-    toast({
-      title: "Success",
-      description: `${newSemesterName || "New Semester"} added with ${courses.length} courses`,
-    });
+    // Semester added silently
   };
 
   // Add course to existing semester
@@ -374,19 +446,13 @@ export default function GradesPage() {
     setNewCourseData("");
     setIsAddCourseDialogOpen(false);
     
-    toast({
-      title: "Success",
-      description: `Added ${courses.length} course(s) to the semester`,
-    });
+    // Courses added silently
   };
 
   // Remove a semester
   const removeSemester = (id: string) => {
     setSemesters(prev => prev.filter(semester => semester.id !== id));
-    toast({
-      title: "Semester removed",
-      description: "The semester has been removed successfully",
-    });
+    // Semester removed silently
   };
   
   // Find a semester by id
@@ -422,10 +488,7 @@ export default function GradesPage() {
     setEditingSemesterId(null);
     setEditedSemesterName("");
     
-    toast({
-      title: "Success",
-      description: "Semester name updated",
-    });
+    // Semester name updated silently
   };
   
   // Start editing course field
@@ -516,10 +579,7 @@ export default function GradesPage() {
     
     setEditingCourse(null);
     
-    toast({
-      title: "Success",
-      description: "Course information updated",
-    });
+    // Course information updated silently
   };
 
   return (
