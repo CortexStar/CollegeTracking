@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileText } from "lucide-react";
+import { FileText, Printer } from "lucide-react";
 import TextbookToc from "@/components/textbook-toc";
 
 export default function TextbookPage() {
@@ -36,35 +36,29 @@ export default function TextbookPage() {
 
           <Card className="border border-gray-200 dark:border-gray-700 mt-3">
             <CardContent className="p-0">
-              {/* PDF Viewer Controls - Simplified */}
-              <div className="flex items-center justify-end p-1 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
+              {/* PDF Document */}
+              <div className="flex flex-col items-center justify-center p-0 bg-white dark:bg-gray-800 min-h-[800px] overflow-auto">
+                {/* PDF Header */}
+                <div className="w-full border-b border-gray-200 dark:border-gray-800 py-2 px-4 flex justify-end items-center gap-4 bg-gray-50 dark:bg-gray-900">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex items-center gap-1"
                     onClick={() => window.open('/linear-algebra-book.pdf', '_blank')}
-                    aria-label="Full PDF"
-                    className="flex items-center gap-1 h-7 text-xs"
                   >
-                    <FileText className="h-3 w-3" />
+                    <FileText className="h-4 w-4" />
                     Full PDF
                   </Button>
-                  
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex items-center gap-1"
                     onClick={() => window.print()}
-                    aria-label="Print"
-                    className="flex items-center gap-1 h-7 text-xs"
                   >
-                    <FileText className="h-3 w-3" />
+                    <Printer className="h-4 w-4" />
                     Print
                   </Button>
                 </div>
-              </div>
-
-              {/* PDF Document */}
-              <div className="flex flex-col items-center justify-center p-0 bg-white dark:bg-gray-800 min-h-[800px] overflow-auto">
                 <div className="w-full">
                   <embed 
                     src="/linear-algebra-book.pdf" 

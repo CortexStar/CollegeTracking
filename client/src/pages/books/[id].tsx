@@ -6,6 +6,7 @@ import TextbookToc from "@/components/textbook-toc";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { FileText, Printer } from "lucide-react";
 
 export default function BookPage() {
   const params = useParams();
@@ -61,8 +62,8 @@ export default function BookPage() {
     <div className="container mx-auto px-4 py-6 flex-grow">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
-          <div>
+        <div className="flex items-center justify-between mb-0">
+          <div className="max-w-3xl">
             {editing.field === "title" ? (
               <form onSubmit={(e) => {
                 e.preventDefault();
@@ -73,12 +74,12 @@ export default function BookPage() {
                   autoFocus 
                   defaultValue={book.title}
                   onBlur={(e) => commit("title", e.target.value)}
-                  className="text-3xl font-bold mb-1 h-auto text-left"
+                  className="text-4xl font-bold mb-1 h-auto text-left text-gray-900 dark:text-gray-100"
                 />
               </form>
             ) : (
               <h1
-                className="text-3xl font-bold cursor-pointer hover:underline hover:underline-offset-4"
+                className="text-4xl font-bold cursor-pointer hover:underline hover:underline-offset-4 text-gray-900 dark:text-gray-100"
                 onDoubleClick={() => setEditing({field: "title"})}
               >
                 {book.title}
@@ -95,12 +96,12 @@ export default function BookPage() {
                   autoFocus 
                   defaultValue={book.author}
                   onBlur={(e) => commit("author", e.target.value)}
-                  className="text-lg text-left"
+                  className="text-lg text-left text-gray-600 dark:text-gray-400"
                 />
               </form>
             ) : (
               <p
-                className="text-lg text-gray-600 dark:text-gray-400 cursor-pointer hover:underline hover:underline-offset-4"
+                className="text-lg text-gray-600 dark:text-gray-400 cursor-pointer hover:underline hover:underline-offset-4 mt-1"
                 onDoubleClick={() => setEditing({field: "author"})}
               >
                 {book.author || "(Double-click to add author)"}
@@ -108,13 +109,36 @@ export default function BookPage() {
             )}
           </div>
 
-          <TextbookToc pdfUrl={book.url} />
+          <div>
+            <TextbookToc pdfUrl={book.url} />
+          </div>
         </div>
 
         {/* PDF Viewer */}
         <Card>
           <CardContent className="p-0 rounded-lg overflow-hidden">
             <div className="flex flex-col items-center justify-center p-0 bg-white dark:bg-gray-800 min-h-[800px] overflow-auto">
+              {/* PDF Header */}
+              <div className="w-full border-b border-gray-200 dark:border-gray-800 py-2 px-4 flex justify-end items-center gap-4 bg-gray-50 dark:bg-gray-900">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex items-center gap-1"
+                  onClick={() => window.open(book.url, '_blank')}
+                >
+                  <FileText className="h-4 w-4" />
+                  Full PDF
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex items-center gap-1"
+                  onClick={() => window.print()}
+                >
+                  <Printer className="h-4 w-4" />
+                  Print
+                </Button>
+              </div>
               <div className="w-full">
                 <embed 
                   src={book.url} 
