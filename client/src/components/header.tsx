@@ -2,17 +2,35 @@ import { Sun, Moon, Book, GraduationCap, BarChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme-provider";
 import { useCourseName } from "@/hooks/use-course-name";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { useEffect, useState } from "react";
+import { getBooks, onBooksChange, BookMeta } from "@/lib/bookStore";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+  ContextMenuSeparator,
+} from "@/components/ui/context-menu";
 
 export default function Header() {
   const { theme, setTheme } = useTheme();
   const { courseName } = useCourseName();
+  const [books, setBooks] = useState<BookMeta[]>([]);
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    setBooks(getBooks());
+    const unsubscribe = onBooksChange(() => setBooks(getBooks()));
+    return () => { unsubscribe(); };
+  }, []);
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
@@ -43,21 +61,59 @@ export default function Header() {
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="secondary" size="sm" className="flex items-center gap-1">
-                <Book className="h-4 w-4" />
-                Book
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
-              <DropdownMenuItem asChild>
-                <Link href="/textbook">
-                  Introduction to Linear Algebra
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ContextMenu>
+            <ContextMenuTrigger asChild>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="secondary" size="sm" className="flex items-center gap-1">
+                    <Book className="h-4 w-4" />
+                    Book
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  <DropdownMenuItem asChild>
+                    <Link href="/textbook">
+                      Introduction to Linear Algebra
+                    </Link>
+                  </DropdownMenuItem>
+                  
+                  {books.length > 0 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      {books.map(book => (
+                        <DropdownMenuItem 
+                          key={book.id}
+                          onClick={() => navigate(`/books/${book.id}`)}
+                        >
+                          {book.title}
+                        </DropdownMenuItem>
+                      ))}
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </ContextMenuTrigger>
+            
+            <ContextMenuContent>
+              <ContextMenuItem onSelect={() => navigate("/books/new")}>
+                ➕ Add Book
+              </ContextMenuItem>
+              
+              {books.length > 0 && (
+                <>
+                  <ContextMenuSeparator />
+                  {books.map(book => (
+                    <ContextMenuItem
+                      key={book.id}
+                      onSelect={() => navigate(`/books/${book.id}`)}
+                    >
+                      {book.title}
+                    </ContextMenuItem>
+                  ))}
+                </>
+              )}
+            </ContextMenuContent>
+          </ContextMenu>
           
           <Button asChild variant="secondary" size="sm" className="flex items-center gap-1">
             <Link href="/grades">
