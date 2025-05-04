@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { SolutionsProvider } from "@/components/solutions-provider";
 import { LectureLinksProvider } from "@/components/lecture-links-provider";
 import { CourseNameProvider } from "@/hooks/use-course-name";
+import Layout from "@/components/layout";
 import Home from "@/pages/home";
 import Landing from "@/pages/landing";
 import TextbookPage from "@/pages/textbook";
@@ -32,7 +33,9 @@ function App() {
         <CourseNameProvider>
           <SolutionsProvider>
             <LectureLinksProvider>
-              <Router />
+              <Layout>
+                <Router />
+              </Layout>
               <Toaster />
             </LectureLinksProvider>
           </SolutionsProvider>
