@@ -94,9 +94,9 @@ export default function Landing() {
       <Header />
       
       <ContextMenu>
-        <ContextMenuTrigger className="flex-grow">
+        <ContextMenuTrigger className="flex-1">
           <div 
-            className="w-full h-[calc(100vh-132px)] absolute inset-0 top-[66px] flex items-center justify-center overflow-hidden" 
+            className="w-full h-[calc(100vh-132px)] fixed top-[66px] left-0 right-0 bottom-[66px] flex items-center justify-center" 
             style={backgroundImage ? {
               backgroundImage: `url(${backgroundImage})`,
               backgroundSize: 'cover',
