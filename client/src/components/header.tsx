@@ -29,7 +29,7 @@ export default function Header() {
             <div className="hidden md:flex space-x-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex items-center gap-1 h-9 border-gray-500 bg-gray-700 text-gray-200 hover:text-white hover:bg-gray-600">
+                  <Button variant="ghost" size="sm" className="flex items-center gap-1 h-9 bg-gray-700 text-gray-200 hover:text-white hover:bg-gray-600">
                     <GraduationCap className="h-4 w-4" />
                     Classes
                   </Button>
@@ -45,7 +45,7 @@ export default function Header() {
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex items-center gap-1 h-9 border-gray-500 bg-gray-700 text-gray-200 hover:text-white hover:bg-gray-600">
+                  <Button variant="ghost" size="sm" className="flex items-center gap-1 h-9 bg-gray-700 text-gray-200 hover:text-white hover:bg-gray-600">
                     <Book className="h-4 w-4" />
                     Book
                   </Button>
@@ -60,7 +60,7 @@ export default function Header() {
               </DropdownMenu>
               
               <Link href="/grades">
-                <Button variant="outline" size="sm" className="flex items-center gap-1 h-9 border-gray-500 bg-gray-700 text-gray-200 hover:text-white hover:bg-gray-600">
+                <Button variant="ghost" size="sm" className="flex items-center gap-1 h-9 bg-gray-700 text-gray-200 hover:text-white hover:bg-gray-600">
                   <BarChart className="h-4 w-4" />
                   Grades & Forecasting
                 </Button>
