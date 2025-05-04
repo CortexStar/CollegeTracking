@@ -533,15 +533,19 @@ export default function GradesPage() {
                   <h3 className="text-xl font-medium">Total Credits</h3>
                   <p className="text-4xl font-bold mt-2 min-w-[3.5ch] text-left">{overallStats.totalCredits.toFixed(1)}</p>
                 </div>
+                <div>
+                  <h3 className="text-xl font-medium">Total Grade Points</h3>
+                  <p className="text-4xl font-bold mt-2 min-w-[3.5ch] text-left">{overallStats.totalGradePoints.toFixed(1)}</p>
+                </div>
               </div>
             </div>
             
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Semesters</CardTitle>
+                <CardTitle className="text-2xl">Semesters</CardTitle>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button>Add Semester</Button>
+                    <Button variant="outline" size="sm">Add Semester</Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-md">
                     <DialogHeader>
@@ -676,7 +680,7 @@ export default function GradesPage() {
                                                           </span>
                                                         )}
                                                       </div>
-                                                      <div className="flex items-center gap-8">
+                                                      <div className="flex items-center gap-5">
                                                         <div className="text-right">
                                                           <span className="text-sm text-gray-500">GPA</span>
                                                           <p className="font-semibold min-w-[3ch] text-right">{semester.gpa.toFixed(2)}</p>
@@ -684,6 +688,10 @@ export default function GradesPage() {
                                                         <div className="text-right">
                                                           <span className="text-sm text-gray-500">Credits</span>
                                                           <p className="font-semibold min-w-[3ch] text-right">{semester.totalCredits.toFixed(1)}</p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                          <span className="text-sm text-gray-500">Grade Points</span>
+                                                          <p className="font-semibold min-w-[3ch] text-right">{semester.totalGradePoints.toFixed(1)}</p>
                                                         </div>
                                                       </div>
                                                     </div>
