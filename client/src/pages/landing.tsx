@@ -90,13 +90,14 @@ export default function Landing() {
   }, []);
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header />
       
       <ContextMenu>
-        <ContextMenuTrigger className="flex-1">
-          <div 
-            className="w-full h-[calc(100vh-132px)] fixed top-[66px] left-0 right-0 bottom-[66px] flex items-center justify-center" 
+        <ContextMenuTrigger className="flex-grow">
+          {/* Main section that fills available space between header and footer */}
+          <main
+            className="flex-grow flex items-center justify-center overflow-hidden"
             style={backgroundImage ? {
               backgroundImage: `url(${backgroundImage})`,
               backgroundSize: 'cover',
@@ -139,7 +140,7 @@ export default function Landing() {
               className="hidden" 
               onChange={handleImageUpload}
             />
-          </div>
+          </main>
         </ContextMenuTrigger>
         <ContextMenuContent>
           <ContextMenuItem onClick={() => fileInputRef.current?.click()}>
