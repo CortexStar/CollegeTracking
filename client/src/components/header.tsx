@@ -118,8 +118,9 @@ export default function Header() {
                 
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/books/new">
-                    ➕ Add New Book
+                  <Link href="/books/new" className="flex items-center">
+                    <Book className="h-4 w-4 mr-2" />
+                    Add New Book
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
