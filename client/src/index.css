@@ -18,6 +18,7 @@ html.landing-page,
 html.landing-page body {
   overflow: hidden;
   height: 100%;
+  position: fixed;
   width: 100%;
 }
 
