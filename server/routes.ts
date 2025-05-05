@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import path from "path";
 import { storage } from "./storage";
 import multer from "multer";
+import { setupAuth } from "./auth";
 
 // Configure multer for storing uploads temporarily in memory
 const upload = multer({
@@ -21,12 +22,13 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup authentication
+  setupAuth(app);
   // API routes for books
   app.get('/api/books', async (req, res) => {
     try {
-      // In a real app with auth, we'd get the userId from the session
-      // For now, use a fixed userId for the demo
-      const userId = req.query.userId?.toString() || "anonymous-user";
+      // Get userId from the authenticated user or fallback to anonymous
+      const userId = req.isAuthenticated() ? req.user.id : "anonymous-user";
       const books = await storage.getUserBooks(userId);
       return res.status(200).json(books);
     } catch (error) {
@@ -59,7 +61,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const { title, author } = req.body;
-      const userId = req.body.userId || "anonymous-user";
+      // Get userId from the authenticated user or fallback to anonymous
+      const userId = req.isAuthenticated() ? req.user.id : "anonymous-user";
       
       if (!title) {
         return res.status(400).json({ error: 'Title is required' });
@@ -125,6 +128,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!book) {
         return res.status(404).json({ error: 'Book not found' });
+      }
+      
+      // Get userId from the authenticated user or fallback to anonymous
+      const userId = req.isAuthenticated() ? req.user.id : "anonymous-user";
+      
+      // Check if the book belongs to the current user
+      if (book.userId !== userId && book.userId !== "anonymous-user") {
+        return res.status(403).json({ error: 'Cannot delete books that belong to other users' });
       }
       
       // Delete the book from the database and file storage
