@@ -4,6 +4,7 @@ import path from "path";
 import { storage } from "./storage";
 import multer from "multer";
 import { setupAuth } from "./auth";
+import { setupWebSocketServer } from "./websocket";
 
 // Configure multer for storing uploads temporarily in memory
 const upload = multer({
@@ -161,6 +162,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Create HTTP server
   const httpServer = createServer(app);
+  
+  // Setup WebSocket server
+  setupWebSocketServer(httpServer);
 
   return httpServer;
 }
