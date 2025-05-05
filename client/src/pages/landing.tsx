@@ -97,8 +97,8 @@ export default function Landing() {
   }, []);
 
   return (
-    <div className="w-full h-[calc(100vh-32px)] flex flex-col overflow-hidden">
-      <div className="w-full h-full flex items-center justify-center">
+    <div className="flex h-full flex-col">
+      <div className="flex flex-1 items-center justify-center overflow-hidden">
         <ContextMenu>
           <ContextMenuTrigger className="w-full h-full flex items-center justify-center">
             <div
