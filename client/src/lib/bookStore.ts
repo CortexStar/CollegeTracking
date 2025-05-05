@@ -227,10 +227,24 @@ export async function deleteBook(id: string): Promise<BookMeta[]> {
     return getBooks();
   }
   
-  // For server-side books, this would delete from the server
-  // API endpoint not implemented yet, so just notify listeners
-  listeners.forEach(fn => fn());
-  return getBooks();
+  // For server-side books, send a DELETE request
+  try {
+    const response = await fetch(`/api/books/${id}`, {
+      method: 'DELETE'
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to delete book');
+    }
+    
+    // Notify listeners and return updated book list
+    listeners.forEach(fn => fn());
+    return getBooks();
+  } catch (error) {
+    console.error('Error deleting book:', error);
+    throw error;
+  }
 }
 
 // Kept for compatibility, but not needed with server storage

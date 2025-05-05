@@ -58,6 +58,15 @@ export default function Header() {
   const handleDeleteBook = async (book: BookMeta) => {
     try {
       await deleteBook(book.id);
+      
+      // Get the current URL path
+      const currentPath = window.location.pathname;
+      
+      // If user is viewing the deleted book, navigate away
+      if (currentPath.includes(`/books/${book.id}`)) {
+        navigate('/textbook');
+      }
+      
       toast({
         title: "Book deleted",
         description: `"${book.title}" has been removed from your library`

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useLocation, useParams } from "wouter";
-import { getBook, updateBook } from "@/lib/bookStore";
+import { getBook, updateBook, onBooksChange } from "@/lib/bookStore";
 import { Input } from "@/components/ui/input";
 import TextbookToc from "@/components/textbook-toc";
 import { Card, CardContent } from "@/components/ui/card";
@@ -49,12 +49,21 @@ export default function BookPage() {
           description: "There was a problem loading the book. Please try again.",
           variant: "destructive"
         });
+        navigate("/textbook");
       } finally {
         setLoading(false);
       }
     };
     
     fetchBookData();
+    
+    // Add listener for book changes
+    const unsubscribe = onBooksChange(() => {
+      // If books change (e.g., a book is deleted), check if current book still exists
+      fetchBookData();
+    });
+    
+    return () => unsubscribe();
   }, [id, navigate, toast]);
 
   // Show loading state

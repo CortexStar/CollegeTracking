@@ -52,6 +52,26 @@ export const storage = {
     return path.join(UPLOAD_DIR, storedName);
   },
   
+  async deleteBook(id: string): Promise<void> {
+    // First get the book to find its file
+    const book = await db.query.books.findFirst({
+      where: eq(books.id, id)
+    });
+    
+    if (!book) {
+      throw new Error('Book not found');
+    }
+    
+    // Delete the file from disk if it exists
+    const filePath = path.join(UPLOAD_DIR, book.storedName);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+    
+    // Delete the book record from the database
+    await db.delete(books).where(eq(books.id, id));
+  },
+  
   // For user session management
   async storeUserPreference(userId: string, theme: string): Promise<void> {
     // This would store a user preference in the database

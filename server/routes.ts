@@ -110,6 +110,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ error: 'Failed to serve book file' });
     }
   });
+  
+  // Delete a book by ID
+  app.delete('/api/books/:id', async (req, res) => {
+    try {
+      const bookId = req.params.id;
+      
+      // Don't allow deleting the built-in book
+      if (bookId === 'linear-algebra-default') {
+        return res.status(403).json({ error: 'Cannot delete built-in book' });
+      }
+      
+      const book = await storage.getBookById(bookId);
+      
+      if (!book) {
+        return res.status(404).json({ error: 'Book not found' });
+      }
+      
+      // Delete the book from the database and file storage
+      await storage.deleteBook(bookId);
+      
+      return res.status(200).json({ message: 'Book deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting book:', error);
+      return res.status(500).json({ error: 'Failed to delete book' });
+    }
+  });
 
   // Explicitly serve the default PDF file (for backward compatibility)
   app.get('/linear-algebra-book.pdf', (req, res) => {
