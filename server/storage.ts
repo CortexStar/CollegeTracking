@@ -1,5 +1,5 @@
-import { db } from "@db";
-import { books } from "@shared/schema";
+import { db } from "../db";
+import { books } from "../shared/schema";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import fs from "fs";
