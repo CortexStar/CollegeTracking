@@ -1,14 +1,25 @@
+/**
+ * DiskStore
+ * 
+ * Local filesystem implementation of the FileStore interface.
+ * Primarily used for development environments.
+ * 
+ * Features:
+ * - Stores files in a configurable directory (/uploads by default)
+ * - Automatically creates the directory if it doesn't exist
+ * - Uses nanoid for generating unique filenames
+ * - Preserves file extensions from original filenames
+ * 
+ * This implementation does not require any external services or API keys,
+ * making it ideal for local development and testing.
+ */
+
 import { promises as fs } from 'fs';
 import { createReadStream } from 'fs';
 import { Readable } from 'stream';
 import path from 'path';
 import { nanoid } from 'nanoid';
 import { FileStore } from './interfaces';
-
-/**
- * Local disk implementation of FileStore
- * Used for development environment
- */
 export class DiskStore implements FileStore {
   private uploadDir: string;
 

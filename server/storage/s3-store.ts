@@ -1,3 +1,17 @@
+/**
+ * S3Store
+ * 
+ * AWS S3 implementation of the FileStore interface for production environments.
+ * 
+ * Required AWS environment variables:
+ * - AWS_REGION: The AWS region where the S3 bucket is located (e.g., 'us-east-1')
+ * - AWS_ACCESS_KEY_ID: AWS access key with S3 permissions
+ * - AWS_SECRET_ACCESS_KEY: AWS secret for the access key
+ * - AWS_BUCKET_NAME: Name of the S3 bucket to use for storage
+ * 
+ * This implementation requires the @aws-sdk/client-s3 package to be installed.
+ */
+
 import { 
   S3Client, 
   PutObjectCommand, 
@@ -8,11 +22,6 @@ import { Readable } from 'stream';
 import { nanoid } from 'nanoid';
 import path from 'path';
 import { FileStore } from './interfaces';
-
-/**
- * AWS S3 implementation of FileStore
- * Used for production environment
- */
 export class S3Store implements FileStore {
   private s3Client: S3Client;
   private bucketName: string;
