@@ -13,6 +13,15 @@ input, textarea, [contenteditable="true"], .caret-current {
   caret-color: currentColor;
 }
 
+/* Prevent scrolling on landing page */
+html.landing-page,
+html.landing-page body {
+  overflow: hidden;
+  height: 100%;
+  position: fixed;
+  width: 100%;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

@@ -97,12 +97,12 @@ export default function Landing() {
   }, []);
 
   return (
-    <div className="w-full h-screen flex flex-col">
-      <div className="flex-grow flex items-center justify-center">
+    <div className="w-full h-[calc(100vh-32px)] flex flex-col overflow-hidden">
+      <div className="w-full h-full flex items-center justify-center">
         <ContextMenu>
           <ContextMenuTrigger className="w-full h-full flex items-center justify-center">
             <div
-              className="w-full h-full flex items-center justify-center overflow-hidden"
+              className="w-full h-full flex items-center justify-center"
               style={
                 backgroundImage
                   ? {
