@@ -2,10 +2,11 @@ import { useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { BookMeta, saveBook } from "@/lib/bookStore";
 import { v4 as uuid } from "uuid";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 export default function NewBook() {
   const [, navigate] = useLocation();
@@ -13,13 +14,45 @@ export default function NewBook() {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
-    setPdfUrl(URL.createObjectURL(f));
+    
+    // Start loading
+    setLoading(true);
+    
+    // Check file size - warn about large files
+    const fileSizeMB = f.size / (1024 * 1024);
+    if (fileSizeMB > 10) {
+      toast({
+        title: "Large File Warning",
+        description: `This file is ${fileSizeMB.toFixed(1)}MB. Large files are stored in browser storage, which has limits.`,
+      });
+    }
+    
+    // Set the title immediately based on filename
     setTitle(f.name.replace(/\.pdf$/i, ""));
+    
+    // Convert the file to a data URL for persistent storage
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setPdfUrl(event.target.result as string);
+        setLoading(false);
+      }
+    };
+    reader.onerror = () => {
+      toast({
+        title: "Error",
+        description: "Failed to read the PDF file. Please try a different file.",
+        variant: "destructive"
+      });
+      setLoading(false);
+    };
+    reader.readAsDataURL(f);
   }
 
   function save() {
@@ -32,13 +65,23 @@ export default function NewBook() {
       return;
     }
     
-    const meta: BookMeta = { id: uuid(), title, author, url: pdfUrl };
-    saveBook(meta);
-    toast({
-      title: "Book added",
-      description: "Your book has been added successfully"
-    });
-    navigate(`/books/${meta.id}`);
+    try {
+      const meta: BookMeta = { id: uuid(), title, author, url: pdfUrl };
+      saveBook(meta);
+      toast({
+        title: "Book added",
+        description: "Your book has been added successfully"
+      });
+      navigate(`/books/${meta.id}`);
+    } catch (error) {
+      // Handle potential localStorage quota exceeded error
+      toast({
+        title: "Error saving book",
+        description: "There was an error saving your book. This might be due to storage limits in your browser.",
+        variant: "destructive"
+      });
+      console.error("Error saving book:", error);
+    }
   }
 
   return (
@@ -47,6 +90,9 @@ export default function NewBook() {
       <Card>
         <CardHeader>
           <CardTitle>Upload PDF</CardTitle>
+          <CardDescription>
+            Books are stored in your browser's local storage. They will persist between sessions but are not synchronized across devices.
+          </CardDescription>
         </CardHeader>
         <CardContent className="p-6 flex flex-col gap-4">
           <Button 
@@ -54,19 +100,24 @@ export default function NewBook() {
             className="w-full h-40 flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 dark:border-gray-700"
             variant="outline"
             onClick={() => fileRef.current?.click()}
+            disabled={loading}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-12 w-12 text-gray-400 dark:text-gray-600"
-              viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-            >
-              <path d="M14 3v4a1 1 0 0 0 1 1h4" />
-              <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" />
-              <path d="M9 17h6" />
-              <path d="M9 13h6" />
-            </svg>
-            {pdfUrl ? 'Change PDF...' : 'Choose PDF...'}
+            {loading ? (
+              <Loader2 className="h-12 w-12 text-gray-400 dark:text-gray-600 animate-spin" />
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-12 w-12 text-gray-400 dark:text-gray-600"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+              >
+                <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" />
+                <path d="M9 17h6" />
+                <path d="M9 13h6" />
+              </svg>
+            )}
+            {loading ? 'Processing PDF...' : (pdfUrl ? 'Change PDF...' : 'Choose PDF...')}
           </Button>
           
           <input
