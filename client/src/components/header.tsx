@@ -1,4 +1,4 @@
-import { Sun, Moon, Book, GraduationCap, BarChart, Trash2 } from "lucide-react";
+import { Sun, Moon, Book, GraduationCap, BarChart, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme-provider";
 import { useCourseName } from "@/hooks/use-course-name";
@@ -18,13 +18,13 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
-  ContextMenuSeparator,
 } from "@/components/ui/context-menu";
 
 export default function Header() {
   const { theme, setTheme } = useTheme();
   const { courseName } = useCourseName();
   const [books, setBooks] = useState<BookMeta[]>([]);
+  const [loading, setLoading] = useState(true);
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
@@ -32,11 +32,45 @@ export default function Header() {
     // Initialize the default books first
     initializeDefaultBooks();
     
-    // Then get all books including default
-    setBooks(getBooks());
-    const unsubscribe = onBooksChange(() => setBooks(getBooks()));
+    // Load books asynchronously
+    const loadBooks = async () => {
+      try {
+        setLoading(true);
+        const bookList = await getBooks();
+        setBooks(bookList);
+      } catch (error) {
+        console.error("Failed to load books:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadBooks();
+    
+    // Setup listener for book changes
+    const unsubscribe = onBooksChange(() => {
+      loadBooks();
+    });
+    
     return () => { unsubscribe(); };
   }, []);
+
+  const handleDeleteBook = async (book: BookMeta) => {
+    try {
+      await deleteBook(book.id);
+      toast({
+        title: "Book deleted",
+        description: `"${book.title}" has been removed from your library`
+      });
+    } catch (error) {
+      console.error("Failed to delete book:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete the book. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
@@ -85,7 +119,12 @@ export default function Header() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56">
-                {books.length > 0 && (
+                {loading ? (
+                  <div className="flex items-center justify-center py-2">
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Loading books...
+                  </div>
+                ) : books.length > 0 ? (
                   <>
                     {books.map(book => (
                       <ContextMenu key={book.id}>
@@ -99,13 +138,7 @@ export default function Header() {
                         <ContextMenuContent>
                           <ContextMenuItem 
                             className="text-red-500 focus:text-red-500 focus:bg-red-50 dark:focus:bg-red-950"
-                            onClick={() => {
-                              deleteBook(book.id);
-                              toast({
-                                title: "Book deleted",
-                                description: `"${book.title}" has been removed from your library`
-                              });
-                            }}
+                            onClick={() => handleDeleteBook(book)}
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete Book
@@ -114,6 +147,10 @@ export default function Header() {
                       </ContextMenu>
                     ))}
                   </>
+                ) : (
+                  <DropdownMenuItem disabled>
+                    No books found
+                  </DropdownMenuItem>
                 )}
                 
                 <DropdownMenuSeparator />
