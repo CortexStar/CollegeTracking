@@ -68,7 +68,23 @@ export default function NewBook() {
     }
     
     try {
-      const meta: BookMeta = { id: uuid(), title, author, url: pdfUrl };
+      // For uploaded PDFs, store as data URL in the pdfData field
+      // For already uploaded PDFs (not starting with "data:"), keep using the existing URL
+      const isDataUrl = pdfUrl.startsWith('data:');
+
+      // Create a temporary blob URL for viewing
+      let viewUrl = pdfUrl;
+      
+      // Create the book metadata with both the URL for viewing and the data for storage
+      const meta: BookMeta = { 
+        id: uuid(), 
+        title, 
+        author, 
+        url: viewUrl,
+        // Only set pdfData if it's a data URL
+        pdfData: isDataUrl ? pdfUrl : undefined
+      };
+      
       saveBook(meta);
       toast({
         title: "Book added",
@@ -95,6 +111,13 @@ export default function NewBook() {
           <CardDescription>
             Books are stored in your browser's local storage. They will persist between sessions but are not synchronized across devices.
           </CardDescription>
+          <Alert className="mt-2">
+            <AlertTitle>Storage Limitations</AlertTitle>
+            <AlertDescription>
+              Browser storage has limits (typically 5-10MB). Very large PDFs may not save correctly.
+              For best results, use PDFs under 10MB.
+            </AlertDescription>
+          </Alert>
         </CardHeader>
         <CardContent className="p-6 flex flex-col gap-4">
           <Button 

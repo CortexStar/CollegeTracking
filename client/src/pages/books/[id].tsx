@@ -119,7 +119,7 @@ export default function BookPage() {
           </div>
 
           <div>
-            <TextbookToc pdfUrl={book.url} />
+            <TextbookToc pdfUrl={pdfUrl} />
           </div>
         </div>
 
@@ -150,7 +150,7 @@ export default function BookPage() {
               </div>
               <div className="w-full">
                 <embed 
-                  src={book.url} 
+                  src={pdfUrl} 
                   type="application/pdf" 
                   width="100%" 
                   height="1200px"
