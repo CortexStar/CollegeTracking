@@ -1,44 +1,75 @@
 import { useState, useEffect, useMemo } from "react";
-import { useLocation, Route, useParams } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { getBook, updateBook } from "@/lib/bookStore";
 import { Input } from "@/components/ui/input";
 import TextbookToc from "@/components/textbook-toc";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Printer } from "lucide-react";
+import { FileText, Printer, Loader2 } from "lucide-react";
 
 export default function BookPage() {
   const params = useParams();
   const id = params.id;
-  const [book, setBook] = useState(getBook(id));
+  const [book, setBook] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [, navigate] = useLocation();
   const [editing, setEditing] = useState<{field: "title" | "author" | null}>({field: null});
   const { toast } = useToast();
   
-  // Create a blob URL for the PDF data if needed
+  // Store the PDF URL
   const pdfUrl = useMemo(() => {
+    // If the book was just uploaded and has pdfData, use that
     if (book?.pdfData) {
-      // Create a blob URL for the PDF data
       return book.pdfData;
     }
+    // Otherwise use the URL from the server
     return book?.url || '';
   }, [book]);
 
-  // Refresh book data when the book changes
+  // Fetch book data when the component mounts or the ID changes
   useEffect(() => {
-    const updatedBook = getBook(id);
-    setBook(updatedBook);
-    if (!updatedBook) {
-      toast({
-        title: "Book not found",
-        description: "The book you're looking for doesn't exist",
-        variant: "destructive"
-      });
-      navigate("/textbook");
-    }
+    const fetchBookData = async () => {
+      setLoading(true);
+      try {
+        const bookData = await getBook(id);
+        setBook(bookData);
+        if (!bookData) {
+          toast({
+            title: "Book not found",
+            description: "The book you're looking for doesn't exist",
+            variant: "destructive"
+          });
+          navigate("/textbook");
+        }
+      } catch (error) {
+        console.error("Error fetching book:", error);
+        toast({
+          title: "Error loading book",
+          description: "There was a problem loading the book. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchBookData();
   }, [id, navigate, toast]);
 
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-6 flex-grow flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-16 w-16 animate-spin mx-auto text-gray-400" />
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading book...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show not found state
   if (!book) {
     return (
       <div className="container mx-auto px-4 py-6 flex-grow">
@@ -55,16 +86,26 @@ export default function BookPage() {
     );
   }
 
-  function commit(field: "title" | "author", value: string) {
-    updateBook(book.id, { [field]: value });
-    setEditing({field: null});
-    // Update local state
-    setBook({...book, [field]: value});
-    
-    toast({
-      title: `${field.charAt(0).toUpperCase() + field.slice(1)} updated`,
-      description: `The ${field} has been updated successfully`,
-    });
+  // Handle metadata updates
+  async function commit(field: "title" | "author", value: string) {
+    try {
+      await updateBook(book.id, { [field]: value });
+      setEditing({field: null});
+      // Update local state
+      setBook({...book, [field]: value});
+      
+      toast({
+        title: `${field.charAt(0).toUpperCase() + field.slice(1)} updated`,
+        description: `The ${field} has been updated successfully`,
+      });
+    } catch (error) {
+      toast({
+        title: "Update failed",
+        description: `Failed to update the ${field}. Please try again.`,
+        variant: "destructive"
+      });
+      console.error(`Error updating ${field}:`, error);
+    }
   }
 
   return (
