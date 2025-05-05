@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function NewBook() {
   const [, navigate] = useLocation();
@@ -111,13 +110,6 @@ export default function NewBook() {
           <CardDescription>
             Books are stored in your browser's local storage. They will persist between sessions but are not synchronized across devices.
           </CardDescription>
-          <Alert className="mt-2">
-            <AlertTitle>Storage Limitations</AlertTitle>
-            <AlertDescription>
-              Browser storage has limits (typically 5-10MB). Very large PDFs may not save correctly.
-              For best results, use PDFs under 10MB.
-            </AlertDescription>
-          </Alert>
         </CardHeader>
         <CardContent className="p-6 flex flex-col gap-4">
           <Button 
