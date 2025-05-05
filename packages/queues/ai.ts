@@ -34,6 +34,7 @@ export type AIJobData =
 
 // Redis connection (to be initialized before use)
 let redisClient: Redis | null = null;
+let isRedisAvailable = false;
 
 /**
  * Initialize Redis connection for AI queues
@@ -41,74 +42,128 @@ let redisClient: Redis | null = null;
 export function initializeRedis() {
   if (redisClient) return redisClient;
   
-  // Create Redis connection
-  redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
-  
-  return redisClient;
+  try {
+    // Create Redis connection
+    redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+    
+    // Set up error handler
+    redisClient.on('error', (err) => {
+      console.log('Redis connection error:', err.message);
+      isRedisAvailable = false;
+    });
+    
+    // Set up connect handler
+    redisClient.on('connect', () => {
+      console.log('Redis connected successfully');
+      isRedisAvailable = true;
+    });
+    
+    return redisClient;
+  } catch (error) {
+    console.log('Redis initialization error:', error);
+    isRedisAvailable = false;
+    return null;
+  }
 }
 
-// Create the AI queue
-const aiQueue = new Queue<AIJobData>('ai-queue', {
-  connection: initializeRedis(),
-  defaultJobOptions: {
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 1000,
-    },
-  },
-});
+// Try to create the AI queue, but handle the case where Redis is not available
+let aiQueue: Queue<AIJobData> | null = null;
+
+try {
+  const redis = initializeRedis();
+  
+  if (redis) {
+    aiQueue = new Queue<AIJobData>('ai-queue', {
+      connection: redis,
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 1000,
+        },
+      },
+    });
+    console.log('AI queue initialized successfully');
+  } else {
+    console.log('AI queue not initialized: Redis connection unavailable');
+  }
+} catch (error) {
+  console.log('Error creating AI queue:', error);
+}
 
 /**
  * Add a job to the AI queue
  * @param job The job data to add to the queue
- * @returns The created job
+ * @returns The created job or null if Redis is not available
  */
 export async function addAIJob(job: AIJobData) {
-  return await aiQueue.add(job.type, job);
+  if (!aiQueue) {
+    console.log('Cannot add job: AI queue not initialized');
+    return null;
+  }
+  
+  try {
+    return await aiQueue.add(job.type, job);
+  } catch (error) {
+    console.error('Error adding job to AI queue:', error);
+    return null;
+  }
 }
 
 /**
  * Process jobs in the AI queue (should be run in a separate worker process)
+ * @returns The worker instance or null if Redis is not available
  */
 export function startAIWorker() {
-  const worker = new Worker<AIJobData>('ai-queue', async (job: Job<AIJobData>) => {
-    console.log(`Processing AI job: ${job.name}`, job.data);
-    
-    try {
-      switch (job.name) {
-        case AIJobType.GENERATE_TOC:
-          return await processGenerateTocJob(job.data as AIJobData & { type: AIJobType.GENERATE_TOC });
-          
-        case AIJobType.SUMMARIZE_SELECTION:
-          return await processSummarizeSelectionJob(job.data as AIJobData & { type: AIJobType.SUMMARIZE_SELECTION });
-          
-        case AIJobType.GENERATE_CLASS_PAGE:
-          return await processGenerateClassPageJob(job.data as AIJobData & { type: AIJobType.GENERATE_CLASS_PAGE });
-          
-        default:
-          throw new Error(`Unknown job type: ${job.name}`);
+  const redis = initializeRedis();
+  
+  if (!redis) {
+    console.log('Cannot start AI worker: Redis connection unavailable');
+    return null;
+  }
+  
+  try {
+    const worker = new Worker<AIJobData>('ai-queue', async (job: Job<AIJobData>) => {
+      console.log(`Processing AI job: ${job.name}`, job.data);
+      
+      try {
+        switch (job.name) {
+          case AIJobType.GENERATE_TOC:
+            return await processGenerateTocJob(job.data as AIJobData & { type: AIJobType.GENERATE_TOC });
+            
+          case AIJobType.SUMMARIZE_SELECTION:
+            return await processSummarizeSelectionJob(job.data as AIJobData & { type: AIJobType.SUMMARIZE_SELECTION });
+            
+          case AIJobType.GENERATE_CLASS_PAGE:
+            return await processGenerateClassPageJob(job.data as AIJobData & { type: AIJobType.GENERATE_CLASS_PAGE });
+            
+          default:
+            throw new Error(`Unknown job type: ${job.name}`);
+        }
+      } catch (error) {
+        console.error(`Error processing AI job ${job.name}:`, error);
+        throw error; // Re-throw to trigger retry
       }
-    } catch (error) {
-      console.error(`Error processing AI job ${job.name}:`, error);
-      throw error; // Re-throw to trigger retry
-    }
-  }, {
-    connection: initializeRedis(),
-    concurrency: 2, // Process up to 2 jobs concurrently
-  });
-  
-  worker.on('completed', (job) => {
-    console.log(`AI job ${job.id} completed`);
-  });
-  
-  worker.on('failed', (job, err) => {
-    console.error(`AI job ${job?.id} failed:`, err);
-  });
-  
-  console.log('AI worker started');
-  
-  return worker;
+    }, {
+      connection: redis,
+      concurrency: 2, // Process up to 2 jobs concurrently
+    });
+    
+    worker.on('completed', (job) => {
+      console.log(`AI job ${job.id} completed`);
+    });
+    
+    worker.on('failed', (job, err) => {
+      console.error(`AI job ${job?.id} failed:`, err);
+    });
+    
+    console.log('AI worker started');
+    
+    return worker;
+  } catch (error) {
+    console.error('Error starting AI worker:', error);
+    return null;
+  }
 }
 
 /**

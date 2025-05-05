@@ -63,32 +63,38 @@ export function setupWebSocketServer(httpServer: Server) {
     }));
   });
 
-  // Set up BullMQ event listeners
-  aiQueue.on('completed', (job, result) => {
-    broadcastToAll({
-      type: 'job-completed',
-      jobId: job.id,
-      jobName: job.name,
-      result
+  // Set up BullMQ event listeners if the queue is available
+  if (aiQueue) {
+    aiQueue.on('completed', (job, result) => {
+      broadcastToAll({
+        type: 'job-completed',
+        jobId: job.id,
+        jobName: job.name,
+        result
+      });
     });
-  });
 
-  aiQueue.on('failed', (job, error) => {
-    broadcastToAll({
-      type: 'job-failed',
-      jobId: job?.id,
-      jobName: job?.name,
-      error: error.message
+    aiQueue.on('failed', (job, error) => {
+      broadcastToAll({
+        type: 'job-failed',
+        jobId: job?.id,
+        jobName: job?.name,
+        error: error.message
+      });
     });
-  });
 
-  aiQueue.on('active', (job) => {
-    broadcastToAll({
-      type: 'job-started',
-      jobId: job.id,
-      jobName: job.name
+    aiQueue.on('active', (job) => {
+      broadcastToAll({
+        type: 'job-started',
+        jobId: job.id,
+        jobName: job.name
+      });
     });
-  });
+    
+    console.log('WebSocket connected to AI queue for event listening');
+  } else {
+    console.log('AI queue not available for WebSocket event listening');
+  }
 
   return wss;
 }
