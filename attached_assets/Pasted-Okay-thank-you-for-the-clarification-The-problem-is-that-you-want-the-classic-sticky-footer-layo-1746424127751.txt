@@ -1,0 +1,295 @@
+Okay, thank you for the clarification! The problem is that you want the classic "sticky footer" layout where:
+
+The Header is fixed at the top.
+
+The Footer is fixed at the bottom.
+
+The Landing page content (the image upload area) fills exactly the space between the header and footer, without causing the whole page to scroll.
+
+The issue isn't just in the Landing component code you provided, but in how it interacts with the overall page structure (Header, Footer, and the main layout container). The h-[calc(100vh-32px)] you added is trying to manually control the height, which often conflicts with a proper flexbox-based layout.
+
+Let's fix this by:
+
+Using a Layout Component that correctly structures the page using flexbox.
+
+Simplifying the Landing Component to just fill the space given to it by the Layout component.
+
+Applying the previous fix of putting styles and handlers directly on the ContextMenuTrigger.
+
+1. The Layout Component (src/components/layout.tsx)
+
+This component is crucial. If you don't have one, create it. If you do, ensure it looks like this:
+
+TypeScript
+
+// src/components/layout.tsx
+import React, { useEffect } from 'react';
+import { useLocation } from 'wouter'; // Or your router's hook for location
+import Header from '@/components/Header'; // Adjust path if needed
+import Footer from '@/components/Footer'; // Adjust path if needed
+
+export default function Layout({ children }: { children: React.ReactNode }) {
+  const [location] = useLocation(); // Get current route/path
+  const isLandingPage = location === "/"; // Check if it's the landing page
+
+  // Optional: Add/remove a class to HTML tag for landing-page specific global styles
+  useEffect(() => {
+    const html = document.documentElement;
+    if (isLandingPage) {
+      html.classList.add("landing-page");
+      // Prevent scrolling *only* on landing page's main content area
+      // Body scroll prevention might be better handled by the main element's overflow
+    } else {
+      html.classList.remove("landing-page");
+    }
+    // Cleanup function to remove the class when the component unmounts or path changes
+    return () => {
+        html.classList.remove("landing-page");
+    };
+  }, [isLandingPage]);
+
+  return (
+    <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
+      <Header />
+      {/* The 'main' element will grow to fill available space */}
+      <main className="flex flex-1 flex-col overflow-hidden">
+        {/* We use flex-col here so children like Landing can use h-full */}
+        {children}
+      </main>
+      <Footer />
+    </div>
+  );
+}
+Key points in Layout.tsx:
+
+flex min-h-screen flex-col: Makes the main container take at least the full viewport height and arrange children (Header, Main, Footer) vertically.
+
+flex flex-1 flex-col overflow-hidden on <main>: This is the magic. flex-1 makes it take up all available vertical space between Header and Footer. flex-col allows its direct children (like the Landing component's root div) to use h-full. overflow-hidden prevents this main area itself from scrolling if its content tries to overflow (which the Landing component shouldn't do now).
+
+2. Updated Landing Component (src/pages/landing.tsx)
+
+Now, let's modify your Landing component to work within this layout and re-apply the context menu fix:
+
+TypeScript
+
+// src/pages/landing.tsx
+import React, { useState, useRef, useEffect, DragEvent } from "react";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger
+} from "@/components/ui/context-menu";
+import { toast } from "@/hooks/use-toast"; // Or "@/components/ui/use-toast" if using shadcn's hook
+
+export default function Landing() {
+  const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  // dropZoneRef might not be needed if applying styles directly to trigger
+
+  // Function to handle file processing (keep your existing logic)
+  const processFile = (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast({ /* ... error toast ... */ });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        const result = event.target.result as string;
+        localStorage.setItem('backgroundImage', result);
+        setBackgroundImage(result);
+        toast({ /* ... success toast ... */ });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Function to handle image upload from input (keep your existing logic)
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processFile(file);
+      // Reset input value to allow selecting the same file again
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  // Drag and drop handlers
+  const handleDragEnter = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+     // Ensure dragging state stays true if moving over children
+    if (!isDragging) setIsDragging(true);
+  };
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Add a slight delay or check relatedTarget to prevent flickering when moving over child elements
+    // For simplicity here, just setting it to false might work okay if the drop zone is simple.
+     setIsDragging(false);
+  };
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      processFile(files[0]);
+    }
+  };
+
+  // REMOVE the custom handleContextMenu handler - let the library work
+
+  // Load saved image on component mount
+  useEffect(() => {
+    const savedImage = localStorage.getItem('backgroundImage');
+    if (savedImage) {
+      setBackgroundImage(savedImage);
+    }
+  }, []);
+
+  // Dynamic class names for the trigger based on state
+  const triggerClasses = `flex flex-col h-full w-full cursor-pointer items-center justify-center transition-colors duration-200 ease-in-out ${
+    backgroundImage
+      ? '' // No border/extra classes when background is shown
+      : `border-2 border-dashed rounded-lg ${
+          isDragging
+            ? "border-blue-400 dark:border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+            : "border-gray-300 dark:border-gray-700"
+        }`
+  }`;
+
+  const triggerStyle = backgroundImage
+    ? {
+        backgroundImage: `url(${backgroundImage})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }
+    : {};
+
+  return (
+    // This outer div now takes full height from the Layout's main area
+    <div className="flex h-full w-full flex-col items-center justify-center">
+      <ContextMenu>
+        <ContextMenuTrigger
+          className={triggerClasses} // Apply dynamic classes
+          style={triggerStyle}       // Apply background styles
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={() => !backgroundImage && fileInputRef.current?.click()}
+          // NO onContextMenu handler here
+        >
+          {/* Content shown ONLY when no background image */}
+          {!backgroundImage && (
+            <div className="text-center p-4"> {/* Removed specific size, let flex center it */}
+               {/* icon */}
+               <svg className="h-10 w-10 text-gray-400 dark:text-gray-600 mb-3 mx-auto" /* ... svg props ... */ >
+                 {/* ... svg path ... */}
+               </svg>
+               <p className="text-gray-500 dark:text-gray-400">
+                 Click or drag an image here
+               </p>
+               <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">
+                 (Right-click for options)
+               </p>
+            </div>
+          )}
+        </ContextMenuTrigger>
+
+        {/* Right-click menu */}
+        <ContextMenuContent>
+          <ContextMenuItem onSelect={() => fileInputRef.current?.click()}>
+            Upload image
+          </ContextMenuItem>
+          {backgroundImage && (
+            <ContextMenuItem
+              onSelect={() => {
+                setBackgroundImage(null);
+                localStorage.removeItem("backgroundImage");
+                toast({ title: "Success", description: "Image removed" });
+              }}
+            >
+              Remove image
+            </ContextMenuItem>
+          )}
+        </ContextMenuContent>
+      </ContextMenu>
+
+      {/* Hidden file input - moved outside trigger for clarity, still works */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleImageUpload}
+      />
+    </div>
+  );
+}
+Key points in Landing.tsx:
+
+Removed h-[calc(100vh-32px)]: The outer div now uses h-full, inheriting height from the <main> element in Layout.tsx.
+
+Simplified Outer Div: flex h-full w-full flex-col items-center justify-center ensures the ContextMenu takes up the whole space provided by the layout and centers its content.
+
+Combined Trigger/Dropzone: The ContextMenuTrigger now directly has the style for the background image, the dynamic className for the dropzone effect (border, drag-over highlight), and all the event handlers (onClick, drag/drop).
+
+No Inner Div for Background: The div that previously held the background image and handlers is gone.
+
+Conditional Content: The placeholder SVG and text are now direct children of the ContextMenuTrigger but are only rendered when !backgroundImage.
+
+No onContextMenu: The conflicting custom handler is removed.
+
+Hidden Input: Moved outside the trigger - this is just organizational and doesn't change functionality.
+
+3. Global CSS (src/index.css or equivalent)
+
+Ensure you have this basic rule:
+
+CSS
+
+/* src/index.css or your global stylesheet */
+html, body, #root /* or your app's root element */ {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Optional: If you still need landing-page specific body styles */
+/* html.landing-page body { */
+  /* overflow: hidden; /* Might not be needed if main handles overflow */
+/* } */
+
+/* Ensure flex containers can shrink if needed, prevents overflow issues sometimes */
+div {
+    min-width: 0;
+    min-height: 0;
+}
+
+How to Use:
+
+Make sure you have separate Header and Footer components.
+
+Ensure the Layout component wraps your page content in your main App file (e.g., App.tsx or routing setup).
+
+Replace your existing Landing component code with the updated version above.
+
+Verify your global CSS.
+
+This setup provides a robust structure where the Layout handles the overall page formatting (header, expanding content area, footer), and the Landing component simply fills the content area given to it. The background image and context menu should now work correctly within this structure.
+
+
+
+
+
+
