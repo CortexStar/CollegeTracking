@@ -1,164 +1,127 @@
-import React, { useState, useRef, useEffect, DragEvent } from "react";
-import { 
+// src/pages/landing.tsx (relevant part)
+import React, { useRef, useState, useEffect /* ... other imports */ } from "react";
+import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
-  ContextMenuTrigger
-} from "@/components/ui/context-menu";
-import { toast } from "@/hooks/use-toast";
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu"; // Assuming shadcn/ui path
+import { useToast } from "@/components/ui/use-toast"; // Assuming shadcn/ui path
+// ... other imports and component logic (useState for backgroundImage, refs, handlers etc.)
 
-export default function Landing() {
-  const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const dropZoneRef = useRef<HTMLDivElement>(null);
+// ... inside your LandingPage component function ...
+const fileInputRef = useRef<HTMLInputElement>(null);
+const [backgroundImage, setBackgroundImage] = useState<string | null>(null); // Manage your state
+const { toast } = useToast();
 
-  // Function to handle file processing
-  const processFile = (file: File) => {
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: "Invalid file type",
-        description: "Please upload an image file",
-        variant: "destructive"
-      });
-      return;
-    }
-
+// Your event handlers: handleDragEnter, handleDragOver, handleDragLeave, handleDrop etc.
+// Example handlers (ensure these are defined in your component):
+const handleDragEnter = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); /* add visual cue? */ };
+const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); };
+const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); /* remove visual cue? */ };
+const handleDrop = (e: React.DragEvent) => {
+  e.preventDefault();
+  e.stopPropagation();
+  // Logic to handle dropped file, read it, setBackgroundImage, save to localStorage
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith("image/")) {
     const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        localStorage.setItem('backgroundImage', event.target.result as string);
-        setBackgroundImage(event.target.result as string);
-        
-        toast({
-          title: "Success",
-          description: "Image uploaded successfully",
-        });
-      }
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      setBackgroundImage(result);
+      localStorage.setItem("backgroundImage", result);
+      toast({ title: "Success", description: "Image uploaded" });
     };
     reader.readAsDataURL(file);
-  };
+  } else {
+     toast({ title: "Error", description: "Please drop an image file", variant: "destructive" });
+  }
+};
 
-  // Function to handle image upload from input
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      processFile(file);
+// Load image from local storage on mount
+useEffect(() => {
+    const storedImage = localStorage.getItem("backgroundImage");
+    if (storedImage) {
+        setBackgroundImage(storedImage);
     }
-  };
+}, []);
 
-  // Drag and drop handlers
-  const handleDragEnter = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
 
-  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!isDragging) {
-      setIsDragging(true);
-    }
-  };
-
-  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      processFile(files[0]);
-    }
-  };
-
-  // Load saved image on component mount
-  useEffect(() => {
-    const savedImage = localStorage.getItem('backgroundImage');
-    if (savedImage) {
-      setBackgroundImage(savedImage);
-    }
-  }, []);
-
-  return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>
-        <div
-          className="relative flex flex-1 items-center justify-center bg-cover bg-center"
+return (
+  <div className="flex h-full flex-col">
+    {/* This outer div ensures the flex column layout takes full height */}
+    <div className="flex flex-1 items-center justify-center overflow-hidden">
+      {/* This div takes remaining space and centers content */}
+      <ContextMenu>
+        <ContextMenuTrigger
+          className="flex h-full w-full cursor-pointer items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700" // Added cursor, border for dropzone feel
           style={
             backgroundImage
-              ? { backgroundImage: `url(${backgroundImage})` }
-              : {}
+              ? {
+                  backgroundImage: `url(${backgroundImage})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  border: 'none', // Remove border when image is present
+                }
+              : {} // Apply default styles (border, etc.) when no image
           }
+          // Apply event handlers directly to the trigger
           onDragEnter={handleDragEnter}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => !backgroundImage && fileInputRef.current?.click()}
+          // REMOVE onContextMenu - let the library handle it
         >
+          {/* You can add content here IF needed when no background is set */}
           {!backgroundImage && (
-            <div
-              ref={dropZoneRef}
-              className={`w-3/4 max-w-md h-56 border-2 border-dashed rounded-lg
-                ${isDragging
-                  ? "border-blue-400 dark:border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                  : "border-gray-300 dark:border-gray-700"}
-                flex flex-col items-center justify-center cursor-pointer`}
-            >
-              {/* icon */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-10 w-10 text-gray-400 dark:text-gray-600 mb-3"
-                viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                  d="M4 16l4.6-4.6a2 2 0 012.8 0L16 16m-2-2 1.6-1.6a2 2 0 012.8 0L20 14M12 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <p className="text-gray-500 dark:text-gray-400">
-                Click or drag an image here
-              </p>
-              <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">
-                Right-click anywhere to upload
-              </p>
+            <div className="text-center text-gray-500 dark:text-gray-400">
+              <p>Drag & drop an image here, or click to upload</p>
+              <p className="text-sm">(Right-click for options)</p>
             </div>
           )}
-
-          {/* hidden file input */}
+          {/* Hidden file input */}
           <input
-            ref={fileInputRef}
             type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleImageUpload}
-          />
-        </div>
-      </ContextMenuTrigger>
-
-      <ContextMenuContent>
-        <ContextMenuItem onSelect={() => fileInputRef.current?.click()}>
-          Upload image
-        </ContextMenuItem>
-        {backgroundImage && (
-          <ContextMenuItem
-            onSelect={() => {
-              setBackgroundImage(null);
-              localStorage.removeItem("backgroundImage");
-              toast({ title: "Success", description: "Image removed" });
+            ref={fileInputRef}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+               if (file && file.type.startsWith("image/")) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  const result = reader.result as string;
+                  setBackgroundImage(result);
+                  localStorage.setItem("backgroundImage", result);
+                  toast({ title: "Success", description: "Image uploaded" });
+                };
+                reader.readAsDataURL(file);
+              } else if (file) {
+                 toast({ title: "Error", description: "Please select an image file", variant: "destructive" });
+              }
+              // Reset input value to allow selecting the same file again
+              if (e.target) e.target.value = '';
             }}
-          >
-            Remove image
+            accept="image/*"
+            style={{ display: "none" }}
+          />
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          <ContextMenuItem onSelect={() => fileInputRef.current?.click()}>
+            Upload image
           </ContextMenuItem>
-        )}
-      </ContextMenuContent>
-    </ContextMenu>
-  );
-}
+          {backgroundImage && (
+            <ContextMenuItem
+              onSelect={() => {
+                setBackgroundImage(null);
+                localStorage.removeItem("backgroundImage");
+                toast({ title: "Success", description: "Image removed" });
+              }}
+            >
+              Remove image
+            </ContextMenuItem>
+          )}
+        </ContextMenuContent>
+      </ContextMenu>
+    </div>
+  </div>
+);
