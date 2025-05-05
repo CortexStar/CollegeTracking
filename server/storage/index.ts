@@ -32,7 +32,5 @@ export function createFileStore(): FileStore {
 // Export a singleton instance of the FileStore
 export const fileStore: FileStore = createFileStore();
 
-// Re-export interfaces and implementations for use elsewhere
-export { FileStore } from './interfaces';
-export { DiskStore } from './disk-store';
-export { S3Store } from './s3-store';
+// Re-export types as needed
+export type { FileStore } from './interfaces';

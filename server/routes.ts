@@ -3,13 +3,12 @@ import { createServer, type Server } from "http";
 import path from "path";
 import { storage } from "./storage";
 import multer from "multer";
-import fs from "fs";
 
 // Configure multer for storing uploads temporarily in memory
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 20 * 1024 * 1024, // Limit file size to 20MB
+    fileSize: 50 * 1024 * 1024, // Limit file size to 50MB
   },
   fileFilter: (_req, file, cb) => {
     // Accept only PDF files
@@ -92,19 +91,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Book not found' });
       }
       
-      const filePath = storage.getBookFilePath(book.storedName);
-      
-      if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: 'Book file not found' });
-      }
-      
       // Set headers for PDF file
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `inline; filename="${book.originalName}"`);
       
-      // Stream the file to the client
-      const fileStream = fs.createReadStream(filePath);
-      fileStream.pipe(res);
+      try {
+        // Get the file stream using the FileStore abstraction
+        const fileStream = await storage.getBookStream(book.storedName);
+        
+        // Stream the file to the client
+        fileStream.pipe(res);
+      } catch (fileError) {
+        console.error('Error getting book file stream:', fileError);
+        return res.status(404).json({ error: 'Book file not found' });
+      }
     } catch (error) {
       console.error('Error serving book file:', error);
       return res.status(500).json({ error: 'Failed to serve book file' });
