@@ -1,3 +1,12 @@
+/**
+ * Storage Service
+ * 
+ * Provides an interface for managing book files (PDFs) in the application.
+ * Uses the FileStore abstraction for actual file storage, which allows
+ * switching between storage backends (local disk, S3, etc.) without
+ * changing the application code.
+ */
+
 import { db } from "../db";
 import { books } from "../shared/schema";
 import { eq } from "drizzle-orm";
