@@ -5,12 +5,27 @@ export interface BookMeta {
   id: string;          // uuid
   title: string;
   author: string;
-  url: string;         // blob URL
+  url: string;         // blob URL or file path
+  pdfData?: string;    // base64 data for storage
   isBuiltIn?: boolean; // true for default books
 }
 
 const KEY = "books";
+const FILES_KEY = "book_files";
 const listeners = new Set<() => void>();
+
+// Estimate localStorage size
+export function getEstimatedLocalStorageSize(): number {
+  let totalSize = 0;
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key) {
+      const value = localStorage.getItem(key) || '';
+      totalSize += key.length + value.length;
+    }
+  }
+  return totalSize / (1024 * 1024); // Return in MB
+}
 
 // Initialize default books
 export function initializeDefaultBooks() {
@@ -46,12 +61,59 @@ export function getBook(id: string) {
     const defaultBook = getBooks().find(b => b.isBuiltIn);
     return defaultBook || null;
   }
-  return getBooks().find(b => b.id === id);
+  
+  const book = getBooks().find(b => b.id === id);
+  if (!book) return null;
+  
+  // If it's not a built-in book, try to fetch the PDF data from separate storage
+  if (!book.isBuiltIn) {
+    try {
+      // Get the stored PDF data
+      const pdfData = localStorage.getItem(`${FILES_KEY}_${id}`);
+      if (pdfData) {
+        // If we have stored PDF data, create a blob URL for it
+        return { ...book, pdfData };
+      }
+    } catch (e) {
+      console.error("Error retrieving book data:", e);
+    }
+  }
+  
+  return book;
 }
 
 export function saveBook(b: BookMeta) {
-  localStorage.setItem(KEY, JSON.stringify([...getBooks(), b]));
-  listeners.forEach(fn => fn());
+  // If we have a data URL for a non-built-in book
+  if (b.pdfData && !b.isBuiltIn) {
+    try {
+      // Use the browser's storage API if we have large data
+      storeBookFile(b.id, b.pdfData);
+      
+      // Store book metadata without the large PDF data
+      const metaToStore = { ...b };
+      delete metaToStore.pdfData; // Don't store large data in the main books array
+      
+      localStorage.setItem(KEY, JSON.stringify([...getBooks(), metaToStore]));
+      listeners.forEach(fn => fn());
+    } catch (error) {
+      console.error("Error storing book:", error);
+      throw error;
+    }
+  } else {
+    // For built-in books or books without data URLs
+    localStorage.setItem(KEY, JSON.stringify([...getBooks(), b]));
+    listeners.forEach(fn => fn());
+  }
+}
+
+// Store file data separately to avoid hitting localStorage limits
+function storeBookFile(id: string, data: string) {
+  try {
+    localStorage.setItem(`${FILES_KEY}_${id}`, data);
+  } catch (error) {
+    console.error("Error storing book data:", error);
+    throw new Error("Failed to store book due to browser storage limits. Try a smaller file.");
+  }
 }
 
 export function updateBook(id: string, patch: Partial<Pick<BookMeta,"title"|"author">>) {
@@ -64,9 +126,18 @@ export function updateBook(id: string, patch: Partial<Pick<BookMeta,"title"|"aut
 }
 
 export function deleteBook(id: string) {
+  // Remove the book from the main metadata store
   const all = getBooks();
   const filtered = all.filter(book => book.id !== id);
   localStorage.setItem(KEY, JSON.stringify(filtered));
+  
+  // Remove the associated PDF data if it exists
+  try {
+    localStorage.removeItem(`${FILES_KEY}_${id}`);
+  } catch (e) {
+    console.error("Error removing book data:", e);
+  }
+  
   listeners.forEach(fn => fn());
   return filtered;
 }

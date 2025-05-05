@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation, Route, useParams } from "wouter";
 import { getBook, updateBook } from "@/lib/bookStore";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,15 @@ export default function BookPage() {
   const [editing, setEditing] = useState<{field: "title" | "author" | null}>({field: null});
   const { toast } = useToast();
   
+  // Create a blob URL for the PDF data if needed
+  const pdfUrl = useMemo(() => {
+    if (book?.pdfData) {
+      // Create a blob URL for the PDF data
+      return book.pdfData;
+    }
+    return book?.url || '';
+  }, [book]);
+
   // Refresh book data when the book changes
   useEffect(() => {
     const updatedBook = getBook(id);
@@ -124,7 +133,7 @@ export default function BookPage() {
                   variant="outline" 
                   size="sm" 
                   className="flex items-center gap-1"
-                  onClick={() => window.open(book.url, '_blank')}
+                  onClick={() => window.open(pdfUrl, '_blank')}
                 >
                   <FileText className="h-4 w-4" />
                   Full PDF
