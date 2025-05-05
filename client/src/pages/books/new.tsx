@@ -30,6 +30,7 @@ export default function NewBook() {
       toast({
         title: "Large File Warning",
         description: `This file is ${fileSizeMB.toFixed(1)}MB. Large files are stored in browser storage, which has limits.`,
+        variant: "destructive",
       });
     }
     
@@ -156,8 +157,16 @@ export default function NewBook() {
                 onClick={save}
                 className="mt-4"
                 size="lg"
+                disabled={loading}
               >
-                Save & Open Book
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  'Save & Open Book'
+                )}
               </Button>
             </>
           )}
