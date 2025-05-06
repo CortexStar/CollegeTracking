@@ -10,7 +10,7 @@ import { createToastHelpers } from "@/utils/toast-helpers";
 import { parseCourseData, makeBlankCourse, Semester } from "@/utils/parseCourseData";
 import { calculateSemesterTotals, calculateGradePoints } from "@/utils/grade-utils";
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
-import SemesterAccordion from "@/components/semester/SemesterAccordion";
+import SemesterDropdown from "@/components/semester/SemesterDropdown";
 import OverviewStats from "@/components/semester/OverviewStats";
 import {
   Dialog,
@@ -395,7 +395,7 @@ export default function GradesPage() {
                   <div key={section.year}>
                     <h3 className="text-xl font-semibold mb-4">{section.year}</h3>
                     {section.semesters.map((semester, index) => (
-                      <SemesterAccordion
+                      <SemesterDropdown
                         key={semester.id}
                         semester={semester}
                         index={index}
