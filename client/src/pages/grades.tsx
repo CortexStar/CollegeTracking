@@ -553,6 +553,40 @@ const addCourseToSemester = () => {
     // Course information updated silently
   };
 
+  // ─── small helper so we don't repeat click logic 4× ──────────────────────
+  type EditableProps = {
+    children: string | number;
+    onEdit: () => void;
+    align?: "center" | "left";
+  };
+
+  const Editable = ({ children, onEdit, align = "left" }: EditableProps) => {
+    const isEmpty =
+      children === "" || (typeof children === "number" && children === 0);
+
+    return (
+      <span
+        className={`cursor-text ${align === "center" ? "mx-auto" : ""}`}
+        onClick={(e) => {
+          if (isEmpty) {
+            onEdit(); // single‑click when empty
+          }
+        }}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          onEdit(); // always edit on double‑click
+        }}
+        title={isEmpty ? "Click to edit" : "Double‑click to edit"}
+      >
+        {isEmpty ? (
+          <span className="text-gray-500">Click to edit</span>
+        ) : (
+          children
+        )}
+      </span>
+    );
+  };
+
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10 max-w-5xl">
       <div className="flex flex-col gap-8">
@@ -697,13 +731,11 @@ const addCourseToSemester = () => {
                                                     ) : (
                                                       <span 
                                                         className="text-xl font-medium cursor-text"
-                                                        onClick={(e) => {
-                                                          if (e.detail === 3) { // Triple click
-                                                            e.stopPropagation();
-                                                            startEditingSemesterName(semester.id, semester.name);
-                                                          }
+                                                        onDoubleClick={(e) => {
+                                                          e.stopPropagation();
+                                                          startEditingSemesterName(semester.id, semester.name);
                                                         }}
-                                                        title="Triple-click to edit"
+                                                        title="Double-click to edit"
                                                       >
                                                         {semester.name}
                                                       </span>
@@ -794,20 +826,11 @@ const addCourseToSemester = () => {
                                                                 />
                                                               </form>
                                                             ) : (
-                                                              <span 
-                                                                className="cursor-text"
-                                                                onClick={(e) => {
-                                                                  const isEmpty = course.id === "";
-                                                                  
-                                                                  if (isEmpty || e.detail === 3) { // Single click for empty fields, triple click otherwise
-                                                                    e.stopPropagation();
-                                                                    startEditingCourse(semester.id, i, 'id', course.id);
-                                                                  }
-                                                                }}
-                                                                title={course.id ? "Triple-click to edit" : "Click to edit"}
+                                                              <Editable
+                                                                onEdit={() => startEditingCourse(semester.id, i, "id", course.id)}
                                                               >
                                                                 {course.id}
-                                                              </span>
+                                                              </Editable>
                                                             )}
                                                           </TableCell>
                                                           <TableCell>
@@ -837,20 +860,11 @@ const addCourseToSemester = () => {
                                                                 />
                                                               </form>
                                                             ) : (
-                                                              <span 
-                                                                className="cursor-text"
-                                                                onClick={(e) => {
-                                                                  const isEmpty = course.title === "";
-                                                                  
-                                                                  if (isEmpty || e.detail === 3) { // Single click for empty fields, triple click otherwise
-                                                                    e.stopPropagation();
-                                                                    startEditingCourse(semester.id, i, 'title', course.title);
-                                                                  }
-                                                                }}
-                                                                title={course.title ? "Triple-click to edit" : "Click to edit"}
+                                                              <Editable
+                                                                onEdit={() => startEditingCourse(semester.id, i, "title", course.title)}
                                                               >
                                                                 {course.title}
-                                                              </span>
+                                                              </Editable>
                                                             )}
                                                           </TableCell>
                                                           <TableCell className="text-center">
@@ -880,20 +894,12 @@ const addCourseToSemester = () => {
                                                                 />
                                                               </form>
                                                             ) : (
-                                                              <span 
-                                                                className="cursor-text"
-                                                                onClick={(e) => {
-                                                                  const isEmpty = course.grade === "";
-                                                                  
-                                                                  if (isEmpty || e.detail === 3) { // Single click for empty fields, triple click otherwise
-                                                                    e.stopPropagation();
-                                                                    startEditingCourse(semester.id, i, 'grade', course.grade);
-                                                                  }
-                                                                }}
-                                                                title={course.grade ? "Triple-click to edit" : "Click to edit"}
+                                                              <Editable
+                                                                onEdit={() => startEditingCourse(semester.id, i, "grade", course.grade)}
+                                                                align="center"
                                                               >
                                                                 {course.grade}
-                                                              </span>
+                                                              </Editable>
                                                             )}
                                                           </TableCell>
                                                           <TableCell className="text-center">
@@ -923,20 +929,19 @@ const addCourseToSemester = () => {
                                                                 />
                                                               </form>
                                                             ) : (
-                                                              <span 
-                                                                className="cursor-text"
-                                                                onClick={(e) => {
-                                                                  const isEmpty = course.credits === 0;
-                                                                  
-                                                                  if (isEmpty || e.detail === 3) { // Single click for empty fields, triple click otherwise
-                                                                    e.stopPropagation();
-                                                                    startEditingCourse(semester.id, i, 'credits', course.credits.toString());
-                                                                  }
-                                                                }}
-                                                                title={course.credits !== 0 ? "Triple-click to edit" : "Click to edit"}
+                                                              <Editable
+                                                                onEdit={() =>
+                                                                  startEditingCourse(
+                                                                    semester.id,
+                                                                    i,
+                                                                    "credits",
+                                                                    course.credits.toString()
+                                                                  )
+                                                                }
+                                                                align="center"
                                                               >
                                                                 {course.credits.toFixed(1)}
-                                                              </span>
+                                                              </Editable>
                                                             )}
                                                           </TableCell>
                                                           <TableCell className="text-center">{points.toFixed(2)}</TableCell>
