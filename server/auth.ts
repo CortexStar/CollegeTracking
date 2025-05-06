@@ -11,6 +11,8 @@ import { users, insertUserSchema } from "../shared/schema.js";
 import { eq } from "drizzle-orm";
 import { env } from "../shared/env.js";
 import { authLogger } from "../shared/logger.js";
+import { OAuth2Client } from "google-auth-library";
+import { GOOGLE_CLIENT_ID } from "./config/auth.js";
 
 // Type augmentation for Express.User
 declare global {
@@ -289,8 +291,79 @@ export function setupAuth(app: Express) {
     res.json(req.user);
   });
   
+  // Google OAuth authentication
+  app.post("/api/auth/google", async (req, res, next) => {
+    try {
+      if (!GOOGLE_CLIENT_ID) {
+        return res.status(500).json({ error: "Google OAuth client ID not configured" });
+      }
+
+      const { credential } = req.body;
+      if (!credential) {
+        return res.status(400).json({ error: "Google ID token is required" });
+      }
+
+      // Verify the Google token
+      const client = new OAuth2Client(GOOGLE_CLIENT_ID);
+      const ticket = await client.verifyIdToken({
+        idToken: credential,
+        audience: GOOGLE_CLIENT_ID,
+      });
+
+      const payload = ticket.getPayload();
+      if (!payload) {
+        return res.status(400).json({ error: "Invalid Google ID token" });
+      }
+
+      const { sub, email, name, picture } = payload;
+      
+      // Create a unique username from the Google ID
+      const googleUsername = `google_${sub}`;
+      
+      // Check if user already exists
+      let user = await db.query.users.findFirst({
+        where: eq(users.username, googleUsername),
+      });
+
+      if (!user) {
+        // Generate a random password for the Google user
+        // They will never use this password as they will always login via Google
+        const randomPassword = Math.random().toString(36).slice(-10);
+        const hashedPassword = await hashPassword(randomPassword);
+
+        // Create a new user for this Google account
+        const [newUser] = await db.insert(users).values({
+          username: googleUsername,
+          password: hashedPassword,
+          email: email || null,
+          name: name || null,
+        }).returning();
+
+        user = newUser;
+      }
+
+      // Login the user
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          return next(loginErr);
+        }
+        
+        // Return user without password
+        const { password: _, ...userWithoutPassword } = user;
+        return res.json(userWithoutPassword);
+      });
+    } catch (error) {
+      authLogger.error("Google authentication error:", error);
+      return res.status(401).json({ 
+        error: "Google authentication failed", 
+        message: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
   // Set up error handling for authentication routes
   app.use('/api/register', authErrorHandler);
   app.use('/api/login', authErrorHandler);
   app.use('/api/logout', authErrorHandler);
+  app.use('/api/auth/google', authErrorHandler);
 }

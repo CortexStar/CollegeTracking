@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 export default function AuthPage() {
   const [location, navigate] = useLocation();
-  const { user, loginMutation } = useAuth();
+  const { user, loginMutation, googleLoginMutation } = useAuth();
 
   // If auth is disabled, redirect to home
   if (!AUTH_ENABLED) {
@@ -23,10 +23,8 @@ export default function AuthPage() {
   // Handle Google OAuth success
   const handleGoogleSuccess = (credentialResponse: CredentialResponse) => {
     if (credentialResponse.credential) {
-      // We'll implement the proper Google login in the useAuth hook later
-      console.log("Google login successful with credential:", credentialResponse.credential);
-      // For now, just log the user in with a dummy account
-      loginMutation.mutate({ username: "google_user", password: "temporary_password" });
+      // Use the googleLoginMutation to authenticate with Google
+      googleLoginMutation.mutate(credentialResponse.credential);
     }
   };
 
