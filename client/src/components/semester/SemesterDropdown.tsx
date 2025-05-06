@@ -111,21 +111,28 @@ const SemesterDropdown: React.FC<SemesterDropdownProps> = ({
                   
                   <div className="flex-1 py-4 px-2">
                     <div className="flex flex-col md:flex-row md:items-center w-full justify-between gap-2">
-                      <div className="font-medium text-base text-left flex-1 flex items-center" onClick={(e) => e.stopPropagation()}>
-                        {editingSemesterId === semester.id ? (
-                          <EditableSpan
-                            value={editedSemesterName}
-                            onSave={(newVal) => onSaveEditedSemesterName(newVal)}
-                            aria-label="Semester name"
-                          />
-                        ) : (
-                          <Editable
-                            onEdit={handleStartEditingSemesterName}
-                            aria-label="Edit semester name"
-                          >
-                            {semester.name}
-                          </Editable>
-                        )}
+                      <div 
+                        className="font-medium text-base text-left flex-1 flex items-center"
+                      >
+                        <div 
+                          className="w-auto" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (editingSemesterId !== semester.id) {
+                              handleStartEditingSemesterName();
+                            }
+                          }}
+                        >
+                          {editingSemesterId === semester.id ? (
+                            <EditableSpan
+                              value={editedSemesterName}
+                              onSave={(newVal) => onSaveEditedSemesterName(newVal)}
+                              aria-label="Semester name"
+                            />
+                          ) : (
+                            semester.name
+                          )}
+                        </div>
                       </div>
                       <div className="space-x-2 flex justify-end text-sm text-muted-foreground">
                         <span className="px-2 py-1 bg-muted rounded">

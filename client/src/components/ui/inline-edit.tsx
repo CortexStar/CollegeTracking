@@ -18,7 +18,7 @@ interface EditableSpanProps {
 
 /**
  * Wraps content to make it appear editable
- * Provides visual indication and handle click/double-click behavior
+ * Provides seamless editing experience
  */
 export const Editable: React.FC<EditableProps> = ({
   children,
@@ -34,9 +34,10 @@ export const Editable: React.FC<EditableProps> = ({
     }
   };
   
-  const handleDoubleClick = () => {
+  const handleDoubleClick = (e: React.MouseEvent) => {
     // Only trigger edit on double-click for non-empty fields
     if (!isEmpty) {
+      e.stopPropagation();
       onEdit();
     }
   };
@@ -47,8 +48,8 @@ export const Editable: React.FC<EditableProps> = ({
     "text-left";
 
   return (
-    <div
-      className={`${alignmentClass} cursor-pointer min-h-[1.5rem] ${isEmpty ? "text-muted-foreground italic" : ""} hover:bg-accent/20 rounded px-1`}
+    <span
+      className={`${alignmentClass} ${isEmpty ? "text-muted-foreground italic" : ""}`}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
       aria-label={ariaLabel}
@@ -56,12 +57,13 @@ export const Editable: React.FC<EditableProps> = ({
       tabIndex={0}
     >
       {isEmpty ? "Click to edit" : children}
-    </div>
+    </span>
   );
 };
 
 /**
  * Editable span component that turns into an input field when active
+ * Designed to be as seamless as possible
  */
 export const EditableSpan: React.FC<EditableSpanProps> = ({
   value,
@@ -82,6 +84,7 @@ export const EditableSpan: React.FC<EditableSpanProps> = ({
   }, []);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    e.stopPropagation();
     if (e.key === "Enter") {
       onSave(editedValue);
     } else if (e.key === "Escape") {
@@ -111,14 +114,15 @@ export const EditableSpan: React.FC<EditableSpanProps> = ({
     "text-left";
 
   return (
-    <Input
+    <input
       ref={inputRef}
-      type={numeric ? "text" : "text"}
+      type="text"
       value={editedValue}
       onChange={handleChange}
       onKeyDown={handleKeyDown}
       onBlur={handleBlur}
-      className={`${alignmentClass} h-8 py-0 px-1`}
+      onClick={(e) => e.stopPropagation()}
+      className={`${alignmentClass} h-8 py-0 px-0 w-full border-none bg-transparent focus:ring-0 focus:outline-none`}
       aria-label={ariaLabel}
     />
   );
