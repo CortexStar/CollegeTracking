@@ -120,7 +120,7 @@ const SemesterDropdown: React.FC<SemesterDropdownProps> = ({
                         </div>
                       </div>
                       <div className="flex justify-end">
-                        <span className="text-sm font-medium bg-accent hover:bg-accent px-2 py-1">
+                        <span className="text-sm font-medium px-2 py-1">
                           GPA: {semester.gpa.toFixed(2)}
                         </span>
                       </div>

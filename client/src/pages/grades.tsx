@@ -338,8 +338,8 @@ export default function GradesPage() {
       {/* Semesters Section */}
       <div className="space-y-4 mt-10">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Semesters</h2>
-          <Button onClick={() => setIsDialogOpen(true)}>Add Semester</Button>
+          <h2 className="text-3xl font-bold">Semesters</h2>
+          <Button size="sm" variant="outline" onClick={() => setIsDialogOpen(true)}>Add Semester</Button>
         </div>
 
         {/* Semesters List with Drag-and-Drop */}
@@ -353,7 +353,7 @@ export default function GradesPage() {
               >
                 {organizedSections.map((section) => (
                   <div key={section.year}>
-                    <h3 className="text-xl font-semibold mb-4 text-primary">{section.year}</h3>
+                    <h3 className="text-xl font-semibold mb-4">{section.year}</h3>
                     {section.semesters.map((semester, index) => (
                       <SemesterDropdown
                         key={semester.id}
