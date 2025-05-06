@@ -326,7 +326,7 @@ export default function GradesPage() {
 
   return (
     <div className="container py-6 max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold mb-4">Grades Summary</h1>
+      <h1 className="text-3xl font-bold mb-6">Grades Summary</h1>
       
       {/* Overall Stats */}
       <OverviewStats 
@@ -336,10 +336,10 @@ export default function GradesPage() {
       />
 
       {/* Semesters Section */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-3xl font-bold">Semesters</h2>
-          <Button size="sm" variant="outline" onClick={() => setIsDialogOpen(true)}>Add Semester</Button>
+      <div className="space-y-4 mt-10">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">Semesters</h2>
+          <Button onClick={() => setIsDialogOpen(true)}>Add Semester</Button>
         </div>
 
         {/* Semesters List with Drag-and-Drop */}
@@ -376,9 +376,6 @@ export default function GradesPage() {
                 {organizedSections.length === 0 && (
                   <div className="bg-card rounded-lg p-6 text-center">
                     <p className="text-muted-foreground mb-3">No semesters added yet.</p>
-                    <Button onClick={() => setIsDialogOpen(true)}>
-                      Add Your First Semester
-                    </Button>
                   </div>
                 )}
                 {provided.placeholder}

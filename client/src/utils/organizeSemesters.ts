@@ -22,11 +22,11 @@ const SEASON_ORDER: Record<string, number> = {
  * Academic year categories (Freshman, Sophomore, etc.)
  */
 const ACADEMIC_LABELS = [
-  "Freshman Year", 
-  "Sophomore Year", 
-  "Junior Year", 
-  "Senior Year",
-  "Graduate Year"
+  "Freshman", 
+  "Sophomore", 
+  "Junior", 
+  "Senior",
+  "Graduate"
 ];
 
 /**
@@ -47,7 +47,7 @@ export function organizeSemesters(semesters: Semester[]): SemesterSection[] {
       if (!match) {
         // Check if it's already labeled as an academic year
         for (const academicLabel of ACADEMIC_LABELS) {
-          if (sem.name.includes(academicLabel.replace(" Year", ""))) {
+          if (sem.name.includes(academicLabel)) {
             return { sem, season: "", academicYear: true, year: 0, label: academicLabel };
           }
         }

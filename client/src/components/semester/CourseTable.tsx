@@ -73,12 +73,9 @@ const CourseTable: React.FC<CourseTableProps> = ({
   if (courses.length === 0) {
     return (
       <div className="p-4 text-center">
-        <p className="text-muted-foreground mb-2">
-          No courses added yet. Click "Add Course" to get started.
+        <p className="text-muted-foreground">
+          No courses added yet. Right-click on the semester to add courses.
         </p>
-        <Button onClick={handleAddCourse} size="sm">
-          Add Course
-        </Button>
       </div>
     );
   }
