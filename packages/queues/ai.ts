@@ -174,7 +174,7 @@ export function startAIWorker() {
  * Process a table of contents generation job
  */
 async function processGenerateTocJob(job: AIJobData & { type: AIJobType.GENERATE_TOC }) {
-  console.log('Processing TOC generation job', job.data);
+  aiLogger.info('Processing TOC generation job', job.data);
   
   // TODO: Implement actual AI model call
   // 1. Get the book content (first few pages)
@@ -204,7 +204,7 @@ async function processGenerateTocJob(job: AIJobData & { type: AIJobType.GENERATE
  * Process a text summarization job
  */
 async function processSummarizeSelectionJob(job: AIJobData & { type: AIJobType.SUMMARIZE_SELECTION }) {
-  console.log('Processing text summarization job', job.data);
+  aiLogger.info('Processing text summarization job', job.data);
   
   // TODO: Implement actual AI model call
   // 1. Call AI model with the selected text to get summary
@@ -230,7 +230,7 @@ async function processSummarizeSelectionJob(job: AIJobData & { type: AIJobType.S
  * Process a class page generation job
  */
 async function processGenerateClassPageJob(job: AIJobData & { type: AIJobType.GENERATE_CLASS_PAGE }) {
-  console.log('Processing class page generation job', job.data);
+  aiLogger.info('Processing class page generation job', job.data);
   
   // TODO: Implement actual AI model call
   // 1. Call AI model with the course topic and prompt

@@ -1,8 +1,8 @@
 // client/src/lib/book-store.ts
 import { apiRequest } from './query-client';
-import { logger } from '@shared/logger';
+import { createLogger } from '@shared/logger';
 
-const bookLogger = logger.createLogger({ category: 'book-store' });
+const bookLogger = createLogger({ category: 'book-store' });
 
 export interface BookMeta {
   id: string;          // uuid
