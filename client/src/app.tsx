@@ -3,53 +3,68 @@ import { Switch, Route, RouteComponentProps } from "wouter";
 import { AppProviders } from "@/providers";
 import Layout from "@/components/layout";
 import { Loader2 } from "lucide-react";
-import { ProtectedRoute } from "@/lib/protected-route";
 
-// Create a wrapper component for Route compatibility
-const RouteWrapper = <P extends {}>(Component: ComponentType<P>) => {
-  // This component ensures it's compatible with Wouter's Route component expectation
-  const WrappedComponent = (props: RouteComponentProps) => <Component {...props as any} />;
-  return WrappedComponent;
-};
+/* ---------- Lazy‑loaded pages ---------- */
 
-// Lazy-loaded components for improved performance with proper typing
-const Landing = RouteWrapper(lazy(() => import("@/pages/landing")));
-const Home = RouteWrapper(lazy(() => import("@/pages/home")));
-const TextbookPage = RouteWrapper(lazy(() => import("@/pages/textbook")));
-const GradesPage = RouteWrapper(lazy(() => import("@/pages/grades")));
-const BookDefault = RouteWrapper(lazy(() => import("@/pages/book")));
-const BookAddPage = RouteWrapper(lazy(() => import("@/pages/books/new")));
-const BookDetailPage = RouteWrapper(lazy(() => import("@/pages/books/[id]")));
-const AuthPage = RouteWrapper(lazy(() => import("@/pages/auth-page")));
-const NotFound = RouteWrapper(lazy(() => import("@/pages/not-found")));
+const withRouteWrapper = <P extends {}>(Cmp: ComponentType<P>) =>
+  // Wouter expects (props: RouteComponentProps) => JSX.Element
+  (props: RouteComponentProps) => <Cmp {...(props as any)} />;
 
-// Loading fallback for lazy-loaded components
+const Landing       = withRouteWrapper(lazy(() => import("@/pages/landing")));
+const Home          = withRouteWrapper(lazy(() => import("@/pages/home")));
+const TextbookPage  = withRouteWrapper(lazy(() => import("@/pages/textbook")));
+const GradesPage    = withRouteWrapper(lazy(() => import("@/pages/grades")));
+const BookDefault   = withRouteWrapper(lazy(() => import("@/pages/book")));
+const BookAddPage   = withRouteWrapper(lazy(() => import("@/pages/books/new")));
+const BookDetail    = withRouteWrapper(lazy(() => import("@/pages/books/[id]")));
+// Auth page completely removed
+const NotFound      = withRouteWrapper(lazy(() => import("@/pages/not-found")));
+
+/* ---------- Loader while pages are loading ---------- */
+
 const LoadingFallback = () => (
-  <div className="flex items-center justify-center min-h-[200px]">
+  <div className="flex min-h-[200px] items-center justify-center">
     <Loader2 className="h-8 w-8 animate-spin text-primary" />
   </div>
 );
+
+/* ---------- Authentication is permanently disabled ---------- */
+
+const SecureRoute = Route;
+
+/* ---------- Router tree ---------- */
 
 function Router() {
   return (
     <Suspense fallback={<LoadingFallback />}>
       <Switch>
+        {/* Public landing page */}
         <Route path="/" component={Landing} />
-        <Route path="/auth" component={AuthPage} />
-        <ProtectedRoute path="/course" component={Home} />
-        <ProtectedRoute path="/course#:problemSet" component={Home} />
-        <ProtectedRoute path="/textbook" component={TextbookPage} />
-        <ProtectedRoute path="/grades" component={GradesPage} />
-        <ProtectedRoute path="/book" component={BookDefault} />
-        <ProtectedRoute path="/books/new" component={BookAddPage} />
-        <ProtectedRoute path="/books/:id" component={BookDetailPage} />
-        <Route component={NotFound} />
+
+        {/* Auth page completely removed */}
+
+        {/* Everything below is protected when auth is on, public otherwise */}
+        <SecureRoute path="/course" component={Home} />
+        <SecureRoute path="/course#:problemSet" component={Home} />
+        <SecureRoute path="/textbook" component={TextbookPage} />
+        <SecureRoute path="/grades" component={GradesPage} />
+        <SecureRoute path="/book" component={BookDefault} />
+        <SecureRoute path="/books/new" component={BookAddPage} />
+        <SecureRoute path="/books/:id" component={BookDetail} />
+
+        {/* Fallback */}
+        <Route>
+          {/* Simple fallback to 404 */}
+          <NotFound />
+        </Route>
       </Switch>
     </Suspense>
   );
 }
 
-function App() {
+/* ---------- App root ---------- */
+
+export default function App() {
   return (
     <AppProviders>
       <Layout>
@@ -58,5 +73,3 @@ function App() {
     </AppProviders>
   );
 }
-
-export default App;

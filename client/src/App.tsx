@@ -3,7 +3,6 @@ import { Switch, Route, RouteComponentProps } from "wouter";
 import { AppProviders } from "@/providers";
 import Layout from "@/components/layout";
 import { Loader2 } from "lucide-react";
-import { ProtectedRoute } from "@/lib/protected-route";
 
 // Create a wrapper component for Route compatibility
 const RouteWrapper = <P extends {}>(Component: ComponentType<P>) => {
@@ -20,7 +19,6 @@ const GradesPage = RouteWrapper(lazy(() => import("@/pages/grades")));
 const BookDefault = RouteWrapper(lazy(() => import("@/pages/book")));
 const BookAddPage = RouteWrapper(lazy(() => import("@/pages/books/new")));
 const BookDetailPage = RouteWrapper(lazy(() => import("@/pages/books/[id]")));
-const AuthPage = RouteWrapper(lazy(() => import("@/pages/auth-page")));
 const NotFound = RouteWrapper(lazy(() => import("@/pages/not-found")));
 
 // Loading fallback for lazy-loaded components

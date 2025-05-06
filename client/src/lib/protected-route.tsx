@@ -1,50 +1,12 @@
-import { useAuth } from "@/hooks/use-auth";
-import { Loader2 } from "lucide-react";
-import { Redirect, Route, RouteComponentProps } from "wouter";
-import { ComponentType, FC } from "react";
-import { AUTH_ENABLED } from "@/lib/config";
+import { Route, RouteComponentProps } from 'wouter';
 
 /**
- * ProtectedRoute Component
- * 
- * A wrapper for Route components that requires authentication when AUTH_ENABLED is true.
- * - If auth is disabled: renders the component directly
- * - If user is loading: shows loading spinner
- * - If user is not authenticated: redirects to auth page
- * - If user is authenticated: renders the component
+ * This is a simplified ProtectedRoute component that no longer protects routes
+ * It acts as a pass-through to regular Route since authentication has been removed
  */
-export function ProtectedRoute({
-  path,
-  component: Component,
-}: {
+export function ProtectedRoute(props: {
   path: string;
-  component: ComponentType<any>;
+  component: (props: RouteComponentProps) => React.JSX.Element;
 }) {
-  const { user, isLoading } = useAuth();
-
-  // If authentication is disabled, render the component directly
-  if (!AUTH_ENABLED) {
-    return <Route path={path} component={Component} />;
-  }
-
-  // Create a component to handle the protected content
-  const ProtectedComponent: FC<RouteComponentProps> = (props) => {
-    if (isLoading) {
-      return (
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      );
-    }
-
-    if (!user) {
-      return <Redirect to="/auth" />;
-    }
-
-    // Pass all props to the component, including route params
-    return <Component {...props} />;
-  };
-
-  // Use the Route component with our wrapper
-  return <Route path={path} component={ProtectedComponent} />;
+  return <Route {...props} />;
 }

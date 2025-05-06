@@ -5,15 +5,9 @@
  */
 
 /**
- * Feature flag for enabling/disabling the authentication system.
- * Set to "N" to disable auth entirely (guest mode).
- * Set to "Y" to enforce authentication.
+ * Authentication permanently disabled
+ * Future placeholder for possible authentication toggle
  */
-export const AUTH_ENABLED = (import.meta.env.VITE_AUTH ?? "Y").toUpperCase() === "Y";
-
-/**
- * Google OAuth client ID for client-side authentication
- */
-export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+export const AUTH_ENABLED = false;
 
 // Add other client-side configuration as needed
