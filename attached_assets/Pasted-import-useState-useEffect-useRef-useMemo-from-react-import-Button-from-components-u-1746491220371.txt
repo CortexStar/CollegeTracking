@@ -74,7 +74,6 @@ interface Course {
   grade: string;
   credits: number;
   gradePoints: number;
-  _uid?: string; // Internal key for React stable keys
 }
 
 // Define academic years
@@ -328,25 +327,25 @@ export default function GradesPage() {
 
   // Create a placeholder course the user can fill in later
 const makeBlankCourse = (): Course => ({
-  // leave user-visible fields empty
-  id: "",
+  id: nanoid(6),          // keeps Drag-n-Drop stable
   title: "",
   grade: "",
   credits: 0,
   gradePoints: 0,
-  // internal key so Drag-and-Drop stays stable
-  _uid: nanoid(6) as unknown as never
 });
 
 // Add course to existing semester
 const addCourseToSemester = () => {
   if (!currentSemesterId) return;
 
-  let coursesToAdd: Course[] = [];
+  // Decide what we're adding
+  let coursesToAdd: Course[];
 
   if (newCourseData.trim()) {
-    coursesToAdd = parseCourseData(newCourseData);
-    if (coursesToAdd.length === 0) {
+    // User pasted something → try to parse it
+    const parsed = parseCourseData(newCourseData);
+
+    if (parsed.length === 0) {
       toast({
         title: "Error",
         description: "Could not parse any valid courses from the input",
@@ -354,45 +353,42 @@ const addCourseToSemester = () => {
       });
       return;
     }
+    coursesToAdd = parsed;
   } else {
+    // Blank form → add ONE editable placeholder
     coursesToAdd = [makeBlankCourse()];
   }
 
-  // remember where the new row will be inserted
-  const indexMap: Record<string, number> = {};
-  setSemesters(prev =>
-    prev.map(sem => {
-      if (sem.id !== currentSemesterId) return sem;
-      indexMap[sem.id] = sem.courses.length; // position of first new row
-      const updatedCourses = [...sem.courses, ...coursesToAdd];
+  // Update the right semester
+  setSemesters((prev) =>
+    prev.map((semester) => {
+      if (semester.id !== currentSemesterId) return semester;
 
-      const totalCredits     = updatedCourses.reduce((s, c) => s + c.credits, 0);
-      const totalGradePoints = updatedCourses.reduce((s, c) => s + c.gradePoints, 0);
+      const updatedCourses = [...semester.courses, ...coursesToAdd];
+
+      const totalCredits = updatedCourses.reduce(
+        (sum, c) => sum + c.credits,
+        0
+      );
+      const totalGradePoints = updatedCourses.reduce(
+        (sum, c) => sum + c.credits * c.gradePoints,
+        0
+      );
 
       return {
-        ...sem,
+        ...semester,
         courses: updatedCourses,
         totalCredits,
         totalGradePoints,
-        gpa: totalCredits
-          ? parseFloat((totalGradePoints / totalCredits).toFixed(2))
-          : 0,
+        gpa:
+          totalCredits > 0
+            ? parseFloat((totalGradePoints / totalCredits).toFixed(2))
+            : 0,
       };
     })
   );
 
-  // if user added a BLANK row, open it in edit-mode immediately
-  if (!newCourseData.trim()) {
-    setTimeout(() => {
-      startEditingCourse(
-        currentSemesterId!,
-        indexMap[currentSemesterId!],
-        "id",
-        ""
-      );
-    }, 0);
-  }
-
+  // Clean-up dialog state
   setNewCourseData("");
   setIsAddCourseDialogOpen(false);
 };
@@ -402,30 +398,6 @@ const addCourseToSemester = () => {
     setSemesters(prev => prev.filter(semester => semester.id !== id));
     
     // Semester removed silently
-  };
-  
-  // Remove one course
-  const removeCourse = (semesterId: string, index: number) => {
-    setSemesters(prev =>
-      prev.map(sem => {
-        if (sem.id !== semesterId) return sem;
-        const updated = [...sem.courses];
-        updated.splice(index, 1);
-
-        const totalCredits = updated.reduce((s, c) => s + c.credits, 0);
-        const totalGradePoints = updated.reduce((s, c) => s + c.gradePoints, 0);
-
-        return {
-          ...sem,
-          courses: updated,
-          totalCredits,
-          totalGradePoints,
-          gpa: totalCredits
-            ? parseFloat((totalGradePoints / totalCredits).toFixed(2))
-            : 0,
-        };
-      })
-    );
   };
 
   // Start editing a semester name
@@ -764,10 +736,8 @@ const addCourseToSemester = () => {
                                                       const points = course.credits * (gradePointValues[course.grade] || 2.0);
                                                       
                                                       return (
-                                                        <ContextMenu>
-                                                          <ContextMenuTrigger asChild>
-                                                            <TableRow key={course._uid ?? i}>
-                                                              <TableCell className="font-medium">
+                                                        <TableRow key={i}>
+                                                          <TableCell className="font-medium">
                                                             {editingCourse && 
                                                               editingCourse.semesterId === semester.id && 
                                                               editingCourse.courseIndex === i && 
@@ -932,17 +902,7 @@ const addCourseToSemester = () => {
                                                             )}
                                                           </TableCell>
                                                           <TableCell className="text-center">{points.toFixed(2)}</TableCell>
-                                                            </TableRow>
-                                                          </ContextMenuTrigger>
-                                                          <ContextMenuContent>
-                                                            <ContextMenuItem
-                                                              onClick={() => removeCourse(semester.id, i)}
-                                                              className="text-red-500 hover:text-red-600 focus:text-red-600"
-                                                            >
-                                                              Delete Course
-                                                            </ContextMenuItem>
-                                                          </ContextMenuContent>
-                                                        </ContextMenu>
+                                                        </TableRow>
                                                       );
                                                     })}
                                                   </>
