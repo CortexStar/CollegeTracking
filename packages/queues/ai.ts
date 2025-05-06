@@ -1,5 +1,9 @@
 import { Queue, Worker, Job } from 'bullmq';
 import { Redis } from 'ioredis';
+import { createLogger } from '../../shared/logger.js';
+
+// Create a specialized logger for AI queue operations
+const aiLogger = createLogger({ category: 'ai-queue' });
 
 // AI Job Types
 export enum AIJobType {
@@ -48,19 +52,19 @@ export function initializeRedis() {
     
     // Set up error handler
     redisClient.on('error', (err) => {
-      console.log('Redis connection error:', err.message);
+      aiLogger.error('Redis connection error:', err.message);
       isRedisAvailable = false;
     });
     
     // Set up connect handler
     redisClient.on('connect', () => {
-      console.log('Redis connected successfully');
+      aiLogger.info('Redis connected successfully');
       isRedisAvailable = true;
     });
     
     return redisClient;
   } catch (error) {
-    console.log('Redis initialization error:', error);
+    aiLogger.error('Redis initialization error:', error);
     isRedisAvailable = false;
     return null;
   }
@@ -83,12 +87,12 @@ try {
         },
       },
     });
-    console.log('AI queue initialized successfully');
+    aiLogger.info('AI queue initialized successfully');
   } else {
-    console.log('AI queue not initialized: Redis connection unavailable');
+    aiLogger.warn('AI queue not initialized: Redis connection unavailable');
   }
 } catch (error) {
-  console.log('Error creating AI queue:', error);
+  aiLogger.error('Error creating AI queue:', error);
 }
 
 /**
@@ -98,14 +102,14 @@ try {
  */
 export async function addAIJob(job: AIJobData) {
   if (!aiQueue) {
-    console.log('Cannot add job: AI queue not initialized');
+    aiLogger.warn('Cannot add job: AI queue not initialized');
     return null;
   }
   
   try {
     return await aiQueue.add(job.type, job);
   } catch (error) {
-    console.error('Error adding job to AI queue:', error);
+    aiLogger.error('Error adding job to AI queue:', error);
     return null;
   }
 }
@@ -118,13 +122,13 @@ export function startAIWorker() {
   const redis = initializeRedis();
   
   if (!redis) {
-    console.log('Cannot start AI worker: Redis connection unavailable');
+    aiLogger.warn('Cannot start AI worker: Redis connection unavailable');
     return null;
   }
   
   try {
     const worker = new Worker<AIJobData>('ai-queue', async (job: Job<AIJobData>) => {
-      console.log(`Processing AI job: ${job.name}`, job.data);
+      aiLogger.info(`Processing AI job: ${job.name}`, job.data);
       
       try {
         switch (job.name) {
@@ -141,7 +145,7 @@ export function startAIWorker() {
             throw new Error(`Unknown job type: ${job.name}`);
         }
       } catch (error) {
-        console.error(`Error processing AI job ${job.name}:`, error);
+        aiLogger.error(`Error processing AI job ${job.name}:`, error);
         throw error; // Re-throw to trigger retry
       }
     }, {
@@ -150,18 +154,18 @@ export function startAIWorker() {
     });
     
     worker.on('completed', (job) => {
-      console.log(`AI job ${job.id} completed`);
+      aiLogger.info(`AI job ${job.id} completed`);
     });
     
     worker.on('failed', (job, err) => {
-      console.error(`AI job ${job?.id} failed:`, err);
+      aiLogger.error(`AI job ${job?.id} failed:`, err);
     });
     
-    console.log('AI worker started');
+    aiLogger.info('AI worker started');
     
     return worker;
   } catch (error) {
-    console.error('Error starting AI worker:', error);
+    aiLogger.error('Error starting AI worker:', error);
     return null;
   }
 }

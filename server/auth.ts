@@ -85,7 +85,7 @@ const authErrorHandler = (err: any, req: Request, res: Response, next: NextFunct
     return res.status(401).json({ error: err.message });
   }
   
-  console.error("Authentication error:", err);
+  authLogger.error("Authentication error:", err);
   next(err);
 };
 
