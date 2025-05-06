@@ -84,14 +84,14 @@ const CourseTable: React.FC<CourseTableProps> = ({
   }
 
   return (
-    <Table>
-      <TableHeader>
+    <Table className="overflow-hidden rounded-md border shadow-sm">
+      <TableHeader className="bg-muted/50">
         <TableRow>
-          <TableHead>Course Code</TableHead>
-          <TableHead>Course Title</TableHead>
-          <TableHead className="text-center">Grade</TableHead>
-          <TableHead className="text-center">Credits</TableHead>
-          <TableHead className="text-right">Grade Points</TableHead>
+          <TableHead className="font-medium">Course Code</TableHead>
+          <TableHead className="font-medium">Course Title</TableHead>
+          <TableHead className="text-center font-medium">Grade</TableHead>
+          <TableHead className="text-center font-medium">Credits</TableHead>
+          <TableHead className="text-right font-medium">Grade Points</TableHead>
           <TableHead className="w-[50px]"></TableHead>
         </TableRow>
       </TableHeader>

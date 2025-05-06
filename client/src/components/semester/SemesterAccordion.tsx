@@ -74,8 +74,8 @@ const SemesterAccordion: React.FC<SemesterAccordionProps> = ({
           ref={provided.innerRef}
           className="mb-4"
         >
-          <Accordion type="single" collapsible value={semester.id} onValueChange={()=>{}}>
-            <AccordionItem value={semester.id} className="border rounded-md bg-card">
+          <Accordion type="single" collapsible value={semester.id} onValueChange={()=>{}} className="border-none">
+            <AccordionItem value={semester.id} className="border rounded-md bg-card shadow-sm overflow-hidden">
               <div
                 className="flex items-center"
                 {...provided.dragHandleProps}
@@ -97,7 +97,7 @@ const SemesterAccordion: React.FC<SemesterAccordionProps> = ({
                     ></path>
                   </svg>
                 </div>
-                <AccordionTrigger className="flex-1 hover:no-underline py-4 px-2">
+                <AccordionTrigger className="flex-1 hover:no-underline py-4 px-2" style={{ transition: 'none' }}>
                   <div className="flex flex-col md:flex-row md:items-center w-full justify-between gap-2">
                     <div className="font-medium text-base text-left flex-1">
                       {editingSemesterId === semester.id ? (
