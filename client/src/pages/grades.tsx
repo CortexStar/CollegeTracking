@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { organizeSemesters } from "@/utils/organizeSemesters";
+import { nanoid } from "nanoid";
 import {
   Card,
   CardContent,
@@ -324,52 +325,73 @@ export default function GradesPage() {
     // Semester added silently
   };
 
-  // Add course to existing semester
-  const addCourseToSemester = () => {
-    if (!currentSemesterId) return;
-    
-    // If no course data was provided, just close the dialog
-    if (!newCourseData.trim()) {
-      setIsAddCourseDialogOpen(false);
-      return;
-    }
-    
-    const courses = parseCourseData(newCourseData);
-    
-    if (courses.length === 0) {
+  // Create a placeholder course the user can fill in later
+const makeBlankCourse = (): Course => ({
+  id: nanoid(6),          // keeps Drag-n-Drop stable
+  title: "",
+  grade: "",
+  credits: 0,
+  gradePoints: 0,
+});
+
+// Add course to existing semester
+const addCourseToSemester = () => {
+  if (!currentSemesterId) return;
+
+  // Decide what we're adding
+  let coursesToAdd: Course[];
+
+  if (newCourseData.trim()) {
+    // User pasted something → try to parse it
+    const parsed = parseCourseData(newCourseData);
+
+    if (parsed.length === 0) {
       toast({
         title: "Error",
         description: "Could not parse any valid courses from the input",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
-    
-    setSemesters(prev => {
-      return prev.map(semester => {
-        if (semester.id === currentSemesterId) {
-          const updatedCourses = [...semester.courses, ...courses];
-          const totalCredits = updatedCourses.reduce((sum, course) => sum + course.credits, 0);
-          const totalGradePoints = updatedCourses.reduce((sum, course) => sum + (course.credits * course.gradePoints), 0);
-          const gpa = totalCredits > 0 ? parseFloat((totalGradePoints / totalCredits).toFixed(2)) : 0;
-          
-          return {
-            ...semester,
-            courses: updatedCourses,
-            totalCredits,
-            totalGradePoints,
-            gpa
-          };
-        }
-        return semester;
-      });
-    });
-    
-    setNewCourseData("");
-    setIsAddCourseDialogOpen(false);
-    
-    // Courses added silently
-  };
+    coursesToAdd = parsed;
+  } else {
+    // Blank form → add ONE editable placeholder
+    coursesToAdd = [makeBlankCourse()];
+  }
+
+  // Update the right semester
+  setSemesters((prev) =>
+    prev.map((semester) => {
+      if (semester.id !== currentSemesterId) return semester;
+
+      const updatedCourses = [...semester.courses, ...coursesToAdd];
+
+      const totalCredits = updatedCourses.reduce(
+        (sum, c) => sum + c.credits,
+        0
+      );
+      const totalGradePoints = updatedCourses.reduce(
+        (sum, c) => sum + c.credits * c.gradePoints,
+        0
+      );
+
+      return {
+        ...semester,
+        courses: updatedCourses,
+        totalCredits,
+        totalGradePoints,
+        gpa:
+          totalCredits > 0
+            ? parseFloat((totalGradePoints / totalCredits).toFixed(2))
+            : 0,
+      };
+    })
+  );
+
+  // Clean-up dialog state
+  setNewCourseData("");
+  setIsAddCourseDialogOpen(false);
+};
 
   // Remove a semester
   const removeSemester = (id: string) => {
