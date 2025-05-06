@@ -5,6 +5,7 @@
     "rootDir": ".",
     "baseUrl": ".",
     "paths": {
+      "@/*": ["./*"],
       "@shared/*": ["../shared/*"],
       "@db": ["../db/index.ts"]
     }
