@@ -90,7 +90,26 @@ interface Semester {
   gpa: number;
   academicYear?: AcademicYear;
 }
+type EditableSpanProps = {
+  value: string;
+  onSave: (newVal: string) => void;
+  align?: "left" | "center";
+  numeric?: boolean;
+};
 
+const EditableSpan = ({
+  value,
+  onSave,
+  align = "left",
+  numeric = false,
+}: {
+  value: string
+  onSave: (newVal: string) => void
+  align?: "left"|"center"
+  numeric?: boolean
+}) => {
+  // …implementation…
+}
 export default function GradesPage() {
   const [semesters, setSemesters] = useState<Semester[]>([]);
   const [newSemesterName, setNewSemesterName] = useState("");
@@ -99,8 +118,7 @@ export default function GradesPage() {
   const [isAddCourseDialogOpen, setIsAddCourseDialogOpen] = useState(false);
   const [currentSemesterId, setCurrentSemesterId] = useState<string | null>(null);
   const [newCourseData, setNewCourseData] = useState("");
-  const [editingSemesterId, setEditingSemesterId] = useState<string | null>(null);
-  const [editedSemesterName, setEditedSemesterName] = useState("");
+
   const [isGradeScaleOpen, setIsGradeScaleOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<{
     semesterId: string;
@@ -442,30 +460,10 @@ const addCourseToSemester = () => {
   };
 
   // Start editing a semester name
-  const startEditingSemesterName = (id: string, currentName: string) => {
-    setEditingSemesterId(id);
-    setEditedSemesterName(currentName);
-    
-    // Focus the input field after it renders
-    setTimeout(() => {
-      if (inputRef.current) {
-        inputRef.current.focus();
-        inputRef.current.select();
-      }
-    }, 50);
-  };
+  
 
   // Save edited semester name
-  const saveEditedSemesterName = () => {
-    if (!editingSemesterId) return;
-    
-    setSemesters(prev => 
-      prev.map(semester => 
-        semester.id === editingSemesterId 
-          ? { ...semester, name: editedSemesterName || semester.name } 
-          : semester
-      )
-    );
+  
     
     setEditingSemesterId(null);
     setEditedSemesterName("");
@@ -566,17 +564,19 @@ const addCourseToSemester = () => {
     // Course information updated silently
   };
   // ─── inline editor that feels like you’re typing in the cell ────────────
-  const EditableSpan = ({
-    value,
-    onSave,
-    align = "left",
-    numeric = false,
-  }: {
-    value: string;
-    onSave: (newVal: string) => void;
-    align?: "left" | "center";
-    numeric?: boolean;
-  }) => {
+// Immediately after your other "saveXxx" helpers:
+
+const saveSemesterName = (semesterId: string, newName: string) => {
+  setSemesters(prev =>
+    prev.map(sem =>
+      sem.id === semesterId
+        ? { ...sem, name: newName.trim() || sem.name }
+        : sem
+    )
+  );
+};
+ 
+   
     const ref = useRef<HTMLSpanElement>(null);
 
     // focus + select text as soon as the span appears
@@ -764,42 +764,11 @@ const addCourseToSemester = () => {
                                               >
                                                 <div className="flex items-center justify-between w-full pr-4">
                                                   <div className="flex items-center">
-                                                    {editingSemesterId === semester.id ? (
-                                                      <form 
-                                                        onSubmit={(e) => {
-                                                          e.preventDefault();
-                                                          saveEditedSemesterName();
-                                                        }}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        className="flex"
-                                                      >
-                                                        <Input
-                                                          ref={inputRef}
-                                                          className="h-8 min-w-[200px] text-xl font-medium border-0 shadow-none bg-transparent p-0 focus-visible:ring-0"
-                                                          value={editedSemesterName}
-                                                          onChange={(e) => setEditedSemesterName(e.target.value)}
-                                                          onBlur={saveEditedSemesterName}
-                                                          onKeyDown={(e) => {
-                                                            if (e.key === "Escape") {
-                                                              setEditingSemesterId(null);
-                                                              setEditedSemesterName("");
-                                                            }
-                                                          }}
-                                                        />
-                                                      </form>
-                                                    ) : (
-                                                <span
-                                                  className="text-base font-medium cursor-text"
-                                                  onClick={(e) => e.stopPropagation()}                 // ← new line
-                                                  onDoubleClick={(e) => {
-                                                    e.stopPropagation();
-                                                    startEditingSemesterName(semester.id, semester.name);
-                                                  }}
-                                                  title="Double-click to edit"
-                                                >
-                                                  {semester.name}
-                                                </span>
-                                                    )}
+                                                    <EditableSpan
+                                                      value={semester.name}
+                                                      onSave={(text) => saveSemesterName(semester.id, text)}
+                                                      className="text-xl font-medium"
+                                                    />
                                                   </div>
                                                   <div className="flex items-center gap-5">
                                                     <div className="text-right">
