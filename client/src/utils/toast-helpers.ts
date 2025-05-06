@@ -1,58 +1,57 @@
-import { ToastActionElement } from "@/components/ui/toast";
-
 /**
- * Toast configuration type
+ * Helper functions for showing toast notifications
  */
-export interface ToastOptions {
-  title?: string;
-  description?: string;
-  action?: ToastActionElement;
-  duration?: number;
+interface ToastHelperProps {
+  toast: {
+    (props: {
+      title: string;
+      description?: string;
+      variant?: "default" | "destructive" | null;
+    }): void;
+  };
 }
 
 /**
- * Factory function to create toast helpers
- * @param useToastFn The useToast hook instance
- * @returns Object with toast helper functions
+ * Create a set of toast helper functions
+ * @param props Object containing the toast function
+ * @returns Object with helper methods for different toast types
  */
-export function createToastHelpers(useToastFn: { toast: (options: ToastOptions) => void }) {
+export function createToastHelpers({ toast }: ToastHelperProps) {
   /**
-   * Show a success toast
-   * @param message Toast message
-   * @param options Additional toast options
+   * Show a success toast notification
+   * @param message Success message
+   * @param description Optional description
    */
-  const toastSuccess = (message: string, options: Omit<ToastOptions, 'description' | 'variant'> = {}) => {
-    useToastFn.toast({
-      title: options.title || "Success",
-      description: message,
-      ...options,
+  const toastSuccess = (message: string, description?: string) => {
+    toast({
+      title: message,
+      description: description,
+      variant: "default",
     });
   };
 
   /**
-   * Show an error toast
+   * Show an error toast notification
    * @param message Error message
-   * @param options Additional toast options
+   * @param description Optional description
    */
-  const toastError = (message: string, options: Omit<ToastOptions, 'description' | 'variant'> = {}) => {
-    useToastFn.toast({
-      title: options.title || "Error",
-      description: message,
+  const toastError = (message: string, description?: string) => {
+    toast({
+      title: message,
+      description: description,
       variant: "destructive",
-      ...options,
     });
   };
 
   /**
-   * Show an info toast
+   * Show an informational toast notification
    * @param message Info message
-   * @param options Additional toast options
+   * @param description Optional description
    */
-  const toastInfo = (message: string, options: Omit<ToastOptions, 'description' | 'variant'> = {}) => {
-    useToastFn.toast({
-      title: options.title || "Info",
-      description: message,
-      ...options,
+  const toastInfo = (message: string, description?: string) => {
+    toast({
+      title: message,
+      description: description,
     });
   };
 

@@ -1,39 +1,39 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 /**
- * A hook that syncs state with localStorage
- * 
- * @param key The localStorage key
+ * Custom hook for persisting state in localStorage
+ * @param key The localStorage key to use
  * @param initialValue The initial value if no value exists in localStorage
- * @returns A stateful value and a function to update it
+ * @returns A stateful value and a function to update it, just like useState
  */
-export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void] {
-  // Get from local storage then
-  // parse stored json or return initialValue
-  const readValue = (): T => {
-    // Prevent build error "window is undefined" but keep working
-    if (typeof window === 'undefined') {
-      return initialValue;
-    }
-
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? (JSON.parse(item) as T) : initialValue;
-    } catch (error) {
-      console.warn(`Error reading localStorage key "${key}":`, error);
-      return initialValue;
-    }
-  };
-
+export function useLocalStorage<T>(
+  key: string,
+  initialValue: T
+): [T, React.Dispatch<React.SetStateAction<T>>] {
   // State to store our value
   // Pass initial state function to useState so logic is only executed once
-  const [storedValue, setStoredValue] = useState<T>(readValue);
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    if (typeof window === "undefined") {
+      return initialValue;
+    }
 
-  // Return a wrapped version of useState's setter function that
-  // persists the new value to localStorage.
-  const setValue = (value: T | ((val: T) => T)) => {
     try {
-      // Allow value to be a function so we have the same API as useState
+      // Get from local storage by key
+      const item = window.localStorage.getItem(key);
+      // Parse stored json or if none return initialValue
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      // If error also return initialValue
+      console.error("Error reading from localStorage:", error);
+      return initialValue;
+    }
+  });
+
+  // Return a wrapped version of useState's setter function that 
+  // persists the new value to localStorage.
+  const setValue: React.Dispatch<React.SetStateAction<T>> = (value) => {
+    try {
+      // Allow value to be a function so we have same API as useState
       const valueToStore =
         value instanceof Function ? value(storedValue) : value;
       
@@ -41,29 +41,32 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
       setStoredValue(valueToStore);
       
       // Save to local storage
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         window.localStorage.setItem(key, JSON.stringify(valueToStore));
       }
     } catch (error) {
-      console.warn(`Error setting localStorage key "${key}":`, error);
+      // A more advanced implementation would handle the error case
+      console.error("Error writing to localStorage:", error);
     }
   };
 
-  // Listen for changes to this localStorage key in other tabs/windows
+  // Update localStorage if the key changes
   useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === key && e.newValue) {
-        setStoredValue(JSON.parse(e.newValue));
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      const item = window.localStorage.getItem(key);
+      if (item) {
+        setStoredValue(JSON.parse(item));
+      } else {
+        window.localStorage.setItem(key, JSON.stringify(initialValue));
       }
-    };
-    
-    // Listen for changes in other windows
-    window.addEventListener('storage', handleStorageChange);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [key]);
+    } catch (error) {
+      console.error("Error updating localStorage:", error);
+    }
+  }, [key, initialValue]);
 
   return [storedValue, setValue];
 }

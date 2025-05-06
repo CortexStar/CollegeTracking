@@ -9,7 +9,7 @@ import { useLocalStorage } from "@/hooks/use-local-storage";
 import { createToastHelpers } from "@/utils/toast-helpers";
 import { parseCourseData, makeBlankCourse, Semester } from "@/utils/parseCourseData";
 import { calculateSemesterTotals, calculateGradePoints } from "@/utils/grade-utils";
-import { DragDropContext, Droppable, DropResult } from "react-beautiful-dnd";
+import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 import SemesterAccordion from "@/components/semester/SemesterAccordion";
 import OverviewStats from "@/components/semester/OverviewStats";
 import {

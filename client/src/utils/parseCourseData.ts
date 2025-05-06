@@ -1,161 +1,154 @@
+import { calculateGradePoints } from "./grade-utils";
+
 /**
- * Course data parsing utilities 
+ * Course object representing a single course within a semester
  */
-import { z } from 'zod';
-import { calculateGradePoints, DEFAULT_CREDITS, DEFAULT_GRADE_POINT, gradePointValues } from './grade-utils';
-import { nanoid } from 'nanoid';
-
-// Course interface
 export interface Course {
-  id: string;
-  title: string;
-  grade: string;
-  credits: number;
-  gradePoints: number;
-  _uid?: string; // Internal key for React stable keys
+  _uid?: string; // unique identifier for each course object
+  id: string; // the course code/ID (e.g., "MATH101")
+  title: string; // the course title (e.g., "Introduction to Calculus")
+  grade: string; // the letter grade (e.g., "A", "B+", etc.)
+  credits: number; // number of credits (e.g., 3, 4, etc.)
+  gradePoints: number; // calculated grade points (credits * grade value)
 }
-
-// Define academic years
-export type AcademicYear = "Freshman" | "Sophomore" | "Junior" | "Senior" | "Summer";
-
-// Semester interface
-export interface Semester {
-  id: string;
-  name: string;
-  courses: Course[];
-  totalCredits: number;
-  totalGradePoints: number;
-  gpa: number;
-  academicYear?: AcademicYear;
-}
-
-// Constants for regex patterns
-const COURSE_CODE_RE = /\b[A-Z]{3,4}\d{4}\b/;
-const GRADE_RE = /^(?:A|A-|B\+|B|B-|C\+|C|C-|D\+|D|D-|F|--)(?:\s|$)/i;
-
-// Validation schema for a course line
-export const courseLineSchema = z.object({
-  id: z.string().regex(COURSE_CODE_RE, "Must be a valid course code (e.g., MATH1101)"),
-  title: z.string().min(1, "Title is required"),
-  grade: z.string().regex(/^[A-F][+-]?$|^[A-F]$|^--$/, "Must be a valid grade (A, B+, C-, etc.)"),
-  credits: z.number().min(0, "Credits must be a positive number")
-});
 
 /**
- * Create a blank course with default values but a unique ID for stable rendering
+ * Semester object representing a collection of courses
+ */
+export interface Semester {
+  id: string; // unique identifier
+  name: string; // display name (e.g., "Fall 2023")
+  courses: Course[]; // list of courses in this semester
+  totalCredits: number; // sum of all course credits
+  totalGradePoints: number; // sum of all course grade points
+  gpa: number; // calculated GPA for the semester
+}
+
+/**
+ * Parse raw text input into Course objects
+ * Expected format: Course ID, Title, Grade, Credits (one per line, blank line separates courses)
+ * 
+ * @param rawText The raw text input to parse
+ * @returns Array of Course objects
+ */
+export function parseCourseData(rawText: string): Course[] {
+  const lines = rawText.split("\n").map((line) => line.trim());
+  const courses: Course[] = [];
+  
+  // Temporary holding variables
+  let currentCourse: Partial<Course> = {};
+  let lineCounter = 0;
+  
+  for (const line of lines) {
+    // Skip empty lines that are not between courses
+    if (!line && lineCounter === 0) continue;
+    
+    // If we encounter an empty line and we have a course in progress, it's a separator
+    if (!line && Object.keys(currentCourse).length > 0) {
+      if (isValidCourse(currentCourse)) {
+        // All required fields are present, add the course
+        const course = currentCourse as Course;
+        
+        // Calculate grade points
+        course.gradePoints = calculateGradePoints(course.credits, course.grade);
+        
+        // Add a unique identifier
+        course._uid = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        courses.push(course);
+      }
+      
+      // Reset for the next course
+      currentCourse = {};
+      lineCounter = 0;
+      continue;
+    }
+    
+    // Process the line based on its position
+    if (lineCounter === 0) {
+      // First line is course ID
+      currentCourse.id = line;
+    } else if (lineCounter === 1) {
+      // Second line is course title
+      currentCourse.title = line;
+    } else if (lineCounter === 2) {
+      // Third line is grade
+      currentCourse.grade = line.toUpperCase();
+    } else if (lineCounter === 3) {
+      // Fourth line is credits
+      const credits = parseFloat(line);
+      if (!isNaN(credits)) {
+        currentCourse.credits = credits;
+      } else {
+        // Invalid credits, skip this course
+        currentCourse = {};
+        lineCounter = 0;
+        continue;
+      }
+      
+      // We have all 4 fields, add the course
+      if (isValidCourse(currentCourse)) {
+        const course = currentCourse as Course;
+        
+        // Calculate grade points
+        course.gradePoints = calculateGradePoints(course.credits, course.grade);
+        
+        // Add a unique identifier
+        course._uid = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        courses.push(course);
+      }
+      
+      // Reset for the next course
+      currentCourse = {};
+      lineCounter = 0;
+      continue;
+    }
+    
+    lineCounter++;
+  }
+  
+  // Don't forget the last course if there's no trailing empty line
+  if (Object.keys(currentCourse).length > 0 && isValidCourse(currentCourse)) {
+    const course = currentCourse as Course;
+    
+    // Calculate grade points
+    course.gradePoints = calculateGradePoints(course.credits, course.grade);
+    
+    // Add a unique identifier
+    course._uid = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    courses.push(course);
+  }
+  
+  return courses;
+}
+
+/**
+ * Create a blank course with default values
+ * @returns A new Course object with empty/default values
  */
 export function makeBlankCourse(): Course {
   return {
-    // leave user-visible fields empty
+    _uid: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     id: "",
     title: "",
     grade: "",
     credits: 0,
     gradePoints: 0,
-    // internal key so Drag-and-Drop stays stable
-    _uid: nanoid(6),
   };
 }
 
 /**
- * Parse course data from raw text input
- * @param rawData Raw text input containing course information
- * @returns Array of parsed Course objects
+ * Check if a course object has all required fields
+ * @param course The course object to validate
+ * @returns true if the course has all required fields
  */
-export function parseCourseData(rawData: string): Course[] {
-  if (!rawData || !rawData.trim()) return [];
-
-  // Normalize input: standardize line breaks, trim whitespace, remove empty lines
-  const normalizedLines = rawData
-    .replace(/\r\n?/g, "\n") // normalize line endings
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean); // remove empty lines
-
-  const courses: Course[] = [];
-  let cursor = 0;
-
-  while (cursor < normalizedLines.length) {
-    // Step 1: Find the next line containing a course code
-    while (cursor < normalizedLines.length && !COURSE_CODE_RE.test(normalizedLines[cursor])) {
-      cursor += 1;
-    }
-
-    if (cursor >= normalizedLines.length) break; // no more courses
-
-    // Extract course ID
-    const codeLine = normalizedLines[cursor++];
-    const idMatch = codeLine.match(COURSE_CODE_RE);
-    const id = idMatch ? idMatch[0] : "UNKNOWN";
-
-    // Step 2: Course title - first non-empty line after the code line
-    let title = "";
-    if (cursor < normalizedLines.length) {
-      // Check if the next line is a title (not a grade or number)
-      if (!GRADE_RE.test(normalizedLines[cursor]) && !/^[-+]?\d/.test(normalizedLines[cursor])) {
-        title = normalizedLines[cursor++];
-      } else {
-        // Look for title in the course ID line - extract anything after the course code
-        const titleInCodeLine = codeLine.substring(codeLine.indexOf(id) + id.length).trim();
-        if (titleInCodeLine) {
-          // Remove leading separators like dash or colon
-          title = titleInCodeLine.replace(/^[-:]\s*/, "");
-        }
-      }
-    }
-
-    // Step 3: Find grade - search for a pattern that looks like a grade
-    let grade = "C"; // Default to C if no grade found
-    while (
-      cursor < normalizedLines.length &&
-      !GRADE_RE.test(normalizedLines[cursor]) &&
-      !/^[-+]?\d/.test(normalizedLines[cursor]) &&
-      !COURSE_CODE_RE.test(normalizedLines[cursor])
-    ) {
-      cursor += 1;
-    }
-
-    if (cursor < normalizedLines.length && GRADE_RE.test(normalizedLines[cursor])) {
-      grade = normalizedLines[cursor++].toUpperCase();
-    }
-
-    // Step 4: Collect numeric values until we hit the next course code
-    const numericValues: number[] = [];
-    while (cursor < normalizedLines.length && !COURSE_CODE_RE.test(normalizedLines[cursor])) {
-      // Try to extract a number from the current line
-      const numMatch = normalizedLines[cursor].match(/[-+]?(\d+(\.\d+)?)/);
-      if (numMatch) {
-        const value = parseFloat(numMatch[1]);
-        if (!isNaN(value)) {
-          numericValues.push(value);
-        }
-      }
-      cursor += 1;
-    }
-
-    // Step 5: Determine which number is credits
-    // Prefer integers between 1-5 as credits
-    let credits = DEFAULT_CREDITS; // Default
-    const creditCandidate = numericValues.find((n) => n % 1 === 0 && n >= 1 && n <= 5);
-    if (creditCandidate !== undefined) {
-      credits = creditCandidate;
-    } else if (numericValues.length > 0) {
-      // If no good candidate, use the last number
-      credits = numericValues[numericValues.length - 1];
-    }
-
-    // Step 6: Calculate grade points
-    const gradePoints = calculateGradePoints(credits, grade);
-
-    // Add the parsed course
-    courses.push({
-      id,
-      title: title || id, // Use ID as title if no title found
-      grade,
-      credits,
-      gradePoints,
-    });
-  }
-
-  return courses;
+function isValidCourse(course: Partial<Course>): boolean {
+  return !!(
+    course.id &&
+    course.title &&
+    course.grade &&
+    typeof course.credits === "number"
+  );
 }

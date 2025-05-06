@@ -1,92 +1,120 @@
-/* src/utils/organizeSemesters.ts
-   -------------------------------------------------------- */
+import { Semester } from "./parseCourseData";
 
-export interface Semester {
-  id: string;
-  name: string;
-  courses: Course[];
-  totalCredits: number;
-  totalGradePoints: number;
-  gpa: number;
-  academicYear?: string;
-}
-
-interface Course {
-  id: string;
-  title: string;
-  grade: string;
-  credits: number;
-  gradePoints: number;
-}
-
+/**
+ * Interface for a section of semesters grouped by academic year
+ */
 export interface SemesterSection {
-  label: string;          // 'Freshman Year', 'Summer 2024', …
+  year: string;
   semesters: Semester[];
 }
 
-const TERM_ORDER: Record<string, number> = {
-  spring: 1,
-  summer: 2,
-  fall:   3,
-  winter: 4,
+/**
+ * Mapping of term names to their relative order within an academic year
+ */
+const termOrder: Record<string, number> = {
+  spring: 0,
+  summer: 1,
+  fall: 2,
+  winter: 3,
 };
 
-const YEAR_LABELS = [
-  'Freshman Year',
-  'Sophomore Year',
-  'Junior Year',
-  'Senior Year',
-];
-
-function parseName(name: string) {
-  const m = name.match(/\b(Spring|Summer|Fall|Winter)\s+(\d{4})/i);
-  return m ? { term: m[1].toLowerCase(), year: +m[2] } : null;
-}
-
-function cmp(a: Semester, b: Semester) {
-  const pa = parseName(a.name), pb = parseName(b.name);
-  if (!pa || !pb) return 0;
-  if (pa.year !== pb.year) return pa.year - pb.year;
-  return TERM_ORDER[pa.term] - TERM_ORDER[pb.term];
-}
-
-export function organizeSemesters(input: Semester[]): SemesterSection[] {
-  const semesters = [...input].sort(cmp);
-  const sections: SemesterSection[] = [];
-  let nonSummerCount = 0;
-
-  for (const s of semesters) {
-    const meta = parseName(s.name);
-    if (!meta) {                         // catch‑all
-      (sections.find(x => x.label === 'Misc') ??
-       sections[sections.push({ label: 'Misc', semesters: [] }) - 1])
-      .semesters.push(s);
-      continue;
-    }
-
-    // summer gets its own bucket
-    if (meta.term === 'summer') {
-      const lbl = `Summer ${meta.year}`;
-      (sections.find(x => x.label === lbl) ??
-       sections[sections.push({ label: lbl, semesters: [] }) - 1])
-      .semesters.push(s);
-      continue;
-    }
-
-    // non‑summer → freshman/soph/junior/… (two terms ≈ one year)
-    const idx = Math.floor(nonSummerCount / 2);
-    const lbl = YEAR_LABELS[idx] ?? `Year ${idx + 1}`;
-    (sections.find(x => x.label === lbl) ??
-     sections[sections.push({ label: lbl, semesters: [] }) - 1])
-    .semesters.push(s);
-    nonSummerCount++;
+/**
+ * Extract academic year from semester name (e.g., "Fall 2023" -> "2023")
+ * @param name Semester name
+ * @returns Extracted year
+ */
+function extractYear(name: string): string {
+  // Look for 4-digit year
+  const yearMatch = name.match(/\b(19|20)\d{2}\b/);
+  if (yearMatch) {
+    return yearMatch[0];
   }
+  
+  // No year found, try to extract term
+  const termMatch = Object.keys(termOrder).find(term => 
+    name.toLowerCase().includes(term.toLowerCase())
+  );
+  
+  if (termMatch) {
+    // Use current year if we found a term but no year
+    const currentYear = new Date().getFullYear();
+    return currentYear.toString();
+  }
+  
+  // Default to "Other" if no recognizable pattern
+  return "Other";
+}
 
-  // final chronological sort of the sections
-  sections.sort((a, b) => {
-    if (a.semesters.length === 0 || b.semesters.length === 0) return 0;
-    return cmp(a.semesters[0], b.semesters[0]);
+/**
+ * Extract term from semester name (e.g., "Fall 2023" -> "fall")
+ * @param name Semester name
+ * @returns Extracted term
+ */
+function extractTerm(name: string): string {
+  const lowerName = name.toLowerCase();
+  for (const term of Object.keys(termOrder)) {
+    if (lowerName.includes(term)) {
+      return term;
+    }
+  }
+  return "other";
+}
+
+/**
+ * Get sorting value for a semester based on term and year
+ * @param name Semester name
+ * @returns Sorting value
+ */
+function getSortValue(name: string): number {
+  const year = extractYear(name);
+  const term = extractTerm(name);
+  const yearNum = parseInt(year) * 10;
+  const termNum = termOrder[term] ?? 5;
+  return yearNum + termNum;
+}
+
+/**
+ * Organize semesters into sections by academic year
+ * @param semesters Array of semester objects
+ * @returns Array of semester sections organized by year
+ */
+export function organizeSemesters(semesters: Semester[]): SemesterSection[] {
+  if (!semesters || semesters.length === 0) {
+    return [];
+  }
+  
+  // Group semesters by year
+  const semestersByYear: Record<string, Semester[]> = {};
+  
+  for (const semester of semesters) {
+    const year = extractYear(semester.name);
+    if (!semestersByYear[year]) {
+      semestersByYear[year] = [];
+    }
+    semestersByYear[year].push(semester);
+  }
+  
+  // Sort semesters within each year by term
+  for (const year in semestersByYear) {
+    semestersByYear[year].sort((a, b) => {
+      return getSortValue(a.name) - getSortValue(b.name);
+    });
+  }
+  
+  // Convert to array and sort by year (most recent first)
+  const result: SemesterSection[] = [];
+  const years = Object.keys(semestersByYear).sort((a, b) => {
+    if (a === "Other") return 1;
+    if (b === "Other") return -1;
+    return parseInt(b) - parseInt(a);
   });
   
-  return sections;
+  for (const year of years) {
+    result.push({
+      year,
+      semesters: semestersByYear[year],
+    });
+  }
+  
+  return result;
 }

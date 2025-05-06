@@ -1,109 +1,125 @@
-import { useState, useRef, useEffect, KeyboardEvent, ReactNode } from "react";
+import React, { useState, useEffect, useRef, KeyboardEvent, ReactNode } from "react";
+import { Input } from "./input";
 
-export interface EditableProps {
+interface EditableProps {
   children: ReactNode;
   onEdit: () => void;
   align?: "left" | "center" | "right";
-  disabled?: boolean;
+  "aria-label"?: string;
+}
+
+interface EditableSpanProps {
+  value: string;
+  onSave: (value?: string) => void;
+  align?: "left" | "center" | "right";
+  numeric?: boolean;
   "aria-label"?: string;
 }
 
 /**
- * Editable component - wrapper for content that can be edited on click/double-click
+ * Wraps content to make it appear editable
+ * Provides visual indication and handle click/double-click behavior
  */
-export const Editable = ({ 
-  children, 
-  onEdit, 
-  align = "left", 
-  disabled = false,
-  "aria-label": ariaLabel
-}: EditableProps) => {
-  const isEmpty = children === "" || (typeof children === "number" && children === 0);
+export const Editable: React.FC<EditableProps> = ({
+  children,
+  onEdit,
+  align = "left",
+  "aria-label": ariaLabel,
+}) => {
+  const isEmpty = !children || (typeof children === "string" && children.trim() === "");
+  const handleClick = () => {
+    // Single click for empty fields, double click for filled fields
+    if (isEmpty) {
+      onEdit();
+    }
+  };
+  
+  const handleDoubleClick = () => {
+    // Only trigger edit on double-click for non-empty fields
+    if (!isEmpty) {
+      onEdit();
+    }
+  };
+
+  const alignmentClass = 
+    align === "center" ? "text-center" : 
+    align === "right" ? "text-right" : 
+    "text-left";
 
   return (
-    <span
-      className={`cursor-text ${align === "center" ? "mx-auto" : ""} ${align === "right" ? "text-right" : ""}`}
-      onClick={(e) => {
-        e.stopPropagation(); // Block Accordion toggle
-        if (isEmpty && !disabled) onEdit(); // still open editor when blank
-      }}
-      onDoubleClick={(e) => {
-        e.stopPropagation(); // Block Accordion toggle
-        if (!disabled) onEdit(); // open editor on double‑click
-      }}
-      title={isEmpty ? "Click to edit" : "Double‑click to edit"}
+    <div
+      className={`${alignmentClass} cursor-pointer min-h-[1.5rem] ${isEmpty ? "text-muted-foreground italic" : ""} hover:bg-accent/20 rounded px-1`}
+      onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
+      aria-label={ariaLabel}
       role="button"
-      tabIndex={disabled ? -1 : 0}
-      aria-label={ariaLabel || (isEmpty ? "Click to add content" : "Double-click to edit content")}
-      onKeyDown={(e) => {
-        if (!disabled && (e.key === "Enter" || e.key === " ")) {
-          e.preventDefault();
-          onEdit();
-        }
-      }}
+      tabIndex={0}
     >
-      {isEmpty ? <em className="text-muted-foreground">Click to edit</em> : children}
-    </span>
+      {isEmpty ? "Click to edit" : children}
+    </div>
   );
 };
 
-export interface EditableSpanProps {
-  value: string;
-  onSave: (newVal: string) => void;
-  align?: "left" | "center" | "right";
-  numeric?: boolean;
-  autoFocus?: boolean;
-  placeholder?: string;
-  "aria-label"?: string;
-}
-
 /**
- * EditableSpan component - inline editable field that transforms into an input on render
+ * Editable span component that turns into an input field when active
  */
-export const EditableSpan = ({
+export const EditableSpan: React.FC<EditableSpanProps> = ({
   value,
   onSave,
   align = "left",
   numeric = false,
-  autoFocus = true,
-  placeholder = "",
-  "aria-label": ariaLabel
-}: EditableSpanProps) => {
-  const [inputValue, setInputValue] = useState(value);
+  "aria-label": ariaLabel,
+}) => {
+  const [editedValue, setEditedValue] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Focus the input field when it renders if autoFocus is true
+  // Focus the input when the component mounts
   useEffect(() => {
-    if (autoFocus && inputRef.current) {
+    if (inputRef.current) {
       inputRef.current.focus();
       inputRef.current.select();
     }
-  }, [autoFocus]);
+  }, []);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      e.preventDefault();
-      onSave(inputValue);
+      onSave(editedValue);
     } else if (e.key === "Escape") {
-      e.preventDefault();
-      onSave(value); // Revert to original
+      onSave(); // Cancel editing
     }
   };
 
+  const handleBlur = () => {
+    onSave(editedValue);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (numeric) {
+      // Allow only numeric input (including decimal)
+      const value = e.target.value;
+      if (value === "" || /^[0-9]*\.?[0-9]*$/.test(value)) {
+        setEditedValue(value);
+      }
+    } else {
+      setEditedValue(e.target.value);
+    }
+  };
+
+  const alignmentClass = 
+    align === "center" ? "text-center" : 
+    align === "right" ? "text-right" : 
+    "text-left";
+
   return (
-    <input
+    <Input
       ref={inputRef}
-      type={numeric ? "number" : "text"}
-      className={`w-full bg-transparent p-1 border rounded focus:ring-2 focus:ring-primary outline-none ${
-        align === "center" ? "text-center" : ""
-      } ${align === "right" ? "text-right" : ""}`}
-      value={inputValue}
-      onChange={(e) => setInputValue(e.target.value)}
-      onBlur={() => onSave(inputValue)}
+      type={numeric ? "text" : "text"}
+      value={editedValue}
+      onChange={handleChange}
       onKeyDown={handleKeyDown}
-      placeholder={placeholder}
-      autoFocus={autoFocus}
-      aria-label={ariaLabel || "Edit field"}
+      onBlur={handleBlur}
+      className={`${alignmentClass} h-8 py-0 px-1`}
+      aria-label={ariaLabel}
     />
   );
 };
