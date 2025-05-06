@@ -1,7 +1,7 @@
 import { Semester } from "./parseCourseData";
 
 /**
- * Interface for a section of semesters grouped by academic year
+ * Interface for a section of semesters grouped by academic year category
  */
 export interface SemesterSection {
   year: string;
@@ -19,11 +19,31 @@ const termOrder: Record<string, number> = {
 };
 
 /**
+ * Academic year categories (Freshman, Sophomore, etc.)
+ */
+const academicYearCategories = [
+  "Freshman",
+  "Sophomore",
+  "Junior", 
+  "Senior",
+  "Graduate"
+];
+
+/**
  * Extract academic year from semester name (e.g., "Fall 2023" -> "2023")
  * @param name Semester name
  * @returns Extracted year
  */
 function extractYear(name: string): string {
+  // First check for academic year categories
+  const categoryMatch = academicYearCategories.find(category => 
+    name.toLowerCase().includes(category.toLowerCase())
+  );
+  
+  if (categoryMatch) {
+    return categoryMatch;
+  }
+  
   // Look for 4-digit year
   const yearMatch = name.match(/\b(19|20)\d{2}\b/);
   if (yearMatch) {
@@ -68,9 +88,35 @@ function extractTerm(name: string): string {
 function getSortValue(name: string): number {
   const year = extractYear(name);
   const term = extractTerm(name);
+  
+  // If it's an academic year category, use that for ordering
+  const categoryIndex = academicYearCategories.findIndex(
+    cat => cat === year
+  );
+  
+  if (categoryIndex >= 0) {
+    return (categoryIndex * 10) + (termOrder[term] ?? 5);
+  }
+  
+  // Otherwise use the numeric year
   const yearNum = parseInt(year) * 10;
   const termNum = termOrder[term] ?? 5;
   return yearNum + termNum;
+}
+
+/**
+ * Get a display name for a year group (includes special handling for academic year categories)
+ */
+function getYearGroupDisplayName(year: string): string {
+  if (academicYearCategories.includes(year)) {
+    return year + " Year";
+  }
+  
+  if (year === "Other") {
+    return "Other Semesters";
+  }
+  
+  return year;
 }
 
 /**
@@ -83,36 +129,58 @@ export function organizeSemesters(semesters: Semester[]): SemesterSection[] {
     return [];
   }
   
-  // Group semesters by year
-  const semestersByYear: Record<string, Semester[]> = {};
+  // Group semesters by year or category
+  const semestersByCategory: Record<string, Semester[]> = {};
   
   for (const semester of semesters) {
-    const year = extractYear(semester.name);
-    if (!semestersByYear[year]) {
-      semestersByYear[year] = [];
+    const category = extractYear(semester.name);
+    if (!semestersByCategory[category]) {
+      semestersByCategory[category] = [];
     }
-    semestersByYear[year].push(semester);
+    semestersByCategory[category].push(semester);
   }
   
-  // Sort semesters within each year by term
-  for (const year in semestersByYear) {
-    semestersByYear[year].sort((a, b) => {
+  // Sort semesters within each category by term
+  for (const category in semestersByCategory) {
+    semestersByCategory[category].sort((a, b) => {
       return getSortValue(a.name) - getSortValue(b.name);
     });
   }
   
-  // Convert to array and sort by year (most recent first)
+  // Convert to array and sort by category order
   const result: SemesterSection[] = [];
-  const years = Object.keys(semestersByYear).sort((a, b) => {
+  
+  // First add academic year categories in order
+  for (const category of academicYearCategories) {
+    if (semestersByCategory[category]) {
+      result.push({
+        year: getYearGroupDisplayName(category),
+        semesters: semestersByCategory[category],
+      });
+      delete semestersByCategory[category];
+    }
+  }
+  
+  // Then add numeric years in descending order
+  const remainingYears = Object.keys(semestersByCategory).sort((a, b) => {
     if (a === "Other") return 1;
     if (b === "Other") return -1;
-    return parseInt(b) - parseInt(a);
+    
+    // Try to parse as numbers, if both are numbers, sort numerically
+    const numA = parseInt(a);
+    const numB = parseInt(b);
+    if (!isNaN(numA) && !isNaN(numB)) {
+      return numB - numA; // Descending order
+    }
+    
+    // Otherwise alphabetical
+    return a.localeCompare(b);
   });
   
-  for (const year of years) {
+  for (const year of remainingYears) {
     result.push({
-      year,
-      semesters: semestersByYear[year],
+      year: getYearGroupDisplayName(year),
+      semesters: semestersByCategory[year],
     });
   }
   

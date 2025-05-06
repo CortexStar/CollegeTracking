@@ -1,15 +1,15 @@
-import React, { useCallback, memo } from "react";
+import React, { useCallback, memo, useState } from "react";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+  Collapsible, 
+  CollapsibleContent, 
+  CollapsibleTrigger
+} from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Editable, EditableSpan } from "@/components/ui/inline-edit";
 import { Semester } from "@/utils/parseCourseData";
 import { Draggable } from "@hello-pangea/dnd";
 import CourseTable from "./CourseTable";
+import { ChevronDown } from "lucide-react";
 
 export interface SemesterAccordionProps {
   semester: Semester;
@@ -33,11 +33,11 @@ export interface SemesterAccordionProps {
   onSaveEditedCourse: (newValue?: string) => void;
   onRemoveSemester: (id: string) => void;
   onAddCourse: (semesterId: string) => void;
-  onRemoveCourse: (semesterId: string, index: number) => void;
+  onRemoveCourse: (semesterId: string, courseIndex: number) => void;
 }
 
 /**
- * SemesterAccordion component - represents a single semester in the drag-and-drop list
+ * SemesterAccordion component - displays a semester with collapsible course table
  */
 const SemesterAccordion: React.FC<SemesterAccordionProps> = ({
   semester,
@@ -53,7 +53,8 @@ const SemesterAccordion: React.FC<SemesterAccordionProps> = ({
   onAddCourse,
   onRemoveCourse,
 }) => {
-  // Use callbacks for performance optimization
+  const [isOpen, setIsOpen] = useState(true);
+  
   const handleStartEditingSemesterName = useCallback(() => {
     onStartEditingSemesterName(semester.id, semester.name);
   }, [onStartEditingSemesterName, semester.id, semester.name]);
@@ -74,13 +75,17 @@ const SemesterAccordion: React.FC<SemesterAccordionProps> = ({
           ref={provided.innerRef}
           className="mb-4"
         >
-          <Accordion type="single" collapsible value={semester.id} onValueChange={()=>{}} className="border-none">
-            <AccordionItem value={semester.id} className="border rounded-md bg-card shadow-sm overflow-hidden">
-              <div
-                className="flex items-center"
-                {...provided.dragHandleProps}
-              >
-                <div className="p-1 cursor-grab">
+          <div className="border rounded-md bg-card shadow-sm overflow-hidden">
+            <Collapsible
+              open={isOpen}
+              onOpenChange={setIsOpen}
+              className="w-full"
+            >
+              <div className="flex items-center border-b">
+                <div 
+                  className="p-1 cursor-grab" 
+                  {...provided.dragHandleProps}
+                >
                   <svg
                     width="20"
                     height="20"
@@ -97,9 +102,12 @@ const SemesterAccordion: React.FC<SemesterAccordionProps> = ({
                     ></path>
                   </svg>
                 </div>
-                <AccordionTrigger className="flex-1 hover:no-underline py-4 px-2" style={{ transition: 'none' }}>
+                <CollapsibleTrigger className="flex-1 hover:no-underline py-4 px-2 flex items-center">
                   <div className="flex flex-col md:flex-row md:items-center w-full justify-between gap-2">
-                    <div className="font-medium text-base text-left flex-1">
+                    <div className="font-medium text-base text-left flex-1 flex items-center">
+                      <ChevronDown 
+                        className={`mr-2 h-4 w-4 transition-transform ${isOpen ? "transform rotate-180" : ""}`} 
+                      />
                       {editingSemesterId === semester.id ? (
                         <EditableSpan
                           value={editedSemesterName}
@@ -127,9 +135,9 @@ const SemesterAccordion: React.FC<SemesterAccordionProps> = ({
                       </span>
                     </div>
                   </div>
-                </AccordionTrigger>
+                </CollapsibleTrigger>
               </div>
-              <AccordionContent className="px-4 pb-4">
+              <CollapsibleContent className="px-4 py-4">
                 <CourseTable
                   semesterId={semester.id}
                   courses={semester.courses}
@@ -151,9 +159,9 @@ const SemesterAccordion: React.FC<SemesterAccordionProps> = ({
                     Delete Semester
                   </Button>
                 </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
         </div>
       )}
     </Draggable>
