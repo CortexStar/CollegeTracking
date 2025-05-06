@@ -1,19 +1,17 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { organizeSemesters } from "@/utils/organizeSemesters";
-import { nanoid } from "nanoid";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
+import { useLocalStorage } from "@/hooks/use-local-storage";
+import { createToastHelpers } from "@/utils/toast-helpers";
+import { parseCourseData, makeBlankCourse, Semester } from "@/utils/parseCourseData";
+import { calculateSemesterTotals, calculateGradePoints } from "@/utils/grade-utils";
+import { DragDropContext, Droppable, DropResult } from "react-beautiful-dnd";
+import SemesterAccordion from "@/components/semester/SemesterAccordion";
+import OverviewStats from "@/components/semester/OverviewStats";
 import {
   Dialog,
   DialogContent,
@@ -25,71 +23,27 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-  ContextMenuSeparator,
-} from "@/components/ui/context-menu";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { useToast } from "@/hooks/use-toast";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
-// Define the grade point values
-const gradePointValues: Record<string, number> = {
-  A: 4.0,
-  "A-": 3.67,
-  "B+": 3.33,
-  B: 3.0,
-  "B-": 2.67,
-  "C+": 2.33,
-  C: 2.0,
-  "C-": 1.67,
-  "D+": 1.33,
-  D: 1.0,
-  "D-": 0.67,
-  F: 0.0,
-  E: 0.0,
-};
-
-// Course interface
-interface Course {
-  id: string;
-  title: string;
-  grade: string;
-  credits: number;
-  gradePoints: number;
-  _uid?: string; // Internal key for React stable keys
-}
-
-// Define academic years
-type AcademicYear = "Freshman" | "Sophomore" | "Junior" | "Senior" | "Summer";
-
-// Semester interface
-interface Semester {
-  id: string;
-  name: string;
-  courses: Course[];
-  totalCredits: number;
-  totalGradePoints: number;
-  gpa: number;
-  academicYear?: AcademicYear;
-}
-
+/**
+ * GradesPage component - manages student grades and GPA calculations
+ */
 export default function GradesPage() {
-  const [semesters, setSemesters] = useState<Semester[]>([]);
+  // Use localStorage hook for persisting semesters
+  const [semesters, setSemesters] = useLocalStorage<Semester[]>("gradeSemesters", []);
+  
+  // Form state
   const [newSemesterName, setNewSemesterName] = useState("");
   const [rawCourseData, setRawCourseData] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAddCourseDialogOpen, setIsAddCourseDialogOpen] = useState(false);
   const [currentSemesterId, setCurrentSemesterId] = useState<string | null>(null);
   const [newCourseData, setNewCourseData] = useState("");
+  
+  // Editing state
   const [editingSemesterId, setEditingSemesterId] = useState<string | null>(null);
   const [editedSemesterName, setEditedSemesterName] = useState("");
   const [isGradeScaleOpen, setIsGradeScaleOpen] = useState(false);
@@ -99,54 +53,38 @@ export default function GradesPage() {
     field: "id" | "title" | "grade" | "credits";
     value: string;
   } | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Hooks
   const { toast } = useToast();
+  const { toastSuccess, toastError } = createToastHelpers({ toast });
 
-  // Calculate overall GPA and credits
-  const overallStats = semesters.reduce(
-    (stats, semester) => {
-      return {
-        totalCredits: stats.totalCredits + semester.totalCredits,
-        totalGradePoints: stats.totalGradePoints + semester.totalGradePoints,
-      };
-    },
-    { totalCredits: 0, totalGradePoints: 0 }
-  );
+  // Calculate overall stats with useMemo to avoid recalculating on every render
+  const overallStats = useMemo(() => {
+    return semesters.reduce(
+      (stats, semester) => {
+        return {
+          totalCredits: stats.totalCredits + semester.totalCredits,
+          totalGradePoints: stats.totalGradePoints + semester.totalGradePoints,
+        };
+      },
+      { totalCredits: 0, totalGradePoints: 0 }
+    );
+  }, [semesters]);
 
-  const overallGPA =
-    overallStats.totalCredits > 0
+  // Calculate overall GPA 
+  const overallGPA = useMemo(() => {
+    return overallStats.totalCredits > 0
       ? Math.round((overallStats.totalGradePoints / overallStats.totalCredits) * 100) / 100
       : 0;
+  }, [overallStats]);
 
-  // Load saved semesters from localStorage
-  useEffect(() => {
-    const savedSemesters = localStorage.getItem("gradeSemesters");
-    if (savedSemesters) {
-      // ─── one‑time migration for older bad totals ─────────────
-      const fixed = JSON.parse(savedSemesters).map((sem: Semester) => {
-        const totalCredits = sem.courses.reduce((s, c) => s + c.credits, 0);
-        const totalGradePoints = sem.courses.reduce((s, c) => s + c.gradePoints, 0);
-        const gpa = totalCredits > 0 ? parseFloat((totalGradePoints / totalCredits).toFixed(2)) : 0;
-        return { ...sem, totalCredits, totalGradePoints, gpa };
-      });
-      setSemesters(fixed);
-      // overwrite storage so it stays clean next time
-      localStorage.setItem("gradeSemesters", JSON.stringify(fixed));
-    }
-  }, []);
-
-  // Use the organizeSemesters utility to properly organize semesters
+  // Memoize organized sections to prevent recalculation on every render
   const organizedSections = useMemo(() => {
     return organizeSemesters(semesters);
   }, [semesters]);
 
-  // Save semesters to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem("gradeSemesters", JSON.stringify(semesters));
-  }, [semesters]);
-
-  // Handle drag-end event for semester reordering
-  const handleDragEnd = (result: any) => {
+  // Handle drag-end event for semester reordering with useCallback
+  const handleDragEnd = useCallback((result: DropResult) => {
     if (!result.destination) return;
 
     const sourceIndex = result.source.index;
@@ -159,118 +97,10 @@ export default function GradesPage() {
     reorderedSemesters.splice(destinationIndex, 0, removed);
 
     setSemesters(reorderedSemesters);
-
-    // Order updated silently
-  };
-
-  // Parse course data from raw text
-  const parseCourseData = (rawData: string): Course[] => {
-    if (!rawData || !rawData.trim()) return [];
-
-    // Constants for regex patterns
-    const COURSE_CODE_RE = /\b[A-Z]{3,4}\d{4}\b/;
-    const GRADE_RE = /^(?:A|A-|B\+|B|B-|C\+|C|C-|D\+|D|D-|F|--)(?:\s|$)/i;
-
-    // Normalize input: standardize line breaks, trim whitespace, remove empty lines
-    const normalizedLines = rawData
-      .replace(/\r\n?/g, "\n") // normalize line endings
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean); // remove empty lines
-
-    const courses: Course[] = [];
-    let cursor = 0;
-
-    while (cursor < normalizedLines.length) {
-      // Step 1: Find the next line containing a course code
-      while (cursor < normalizedLines.length && !COURSE_CODE_RE.test(normalizedLines[cursor])) {
-        cursor += 1;
-      }
-
-      if (cursor >= normalizedLines.length) break; // no more courses
-
-      // Extract course ID
-      const codeLine = normalizedLines[cursor++];
-      const idMatch = codeLine.match(COURSE_CODE_RE);
-      const id = idMatch ? idMatch[0] : "UNKNOWN";
-
-      // Step 2: Course title - first non-empty line after the code line
-      let title = "";
-      if (cursor < normalizedLines.length) {
-        // Check if the next line is a title (not a grade or number)
-        if (!GRADE_RE.test(normalizedLines[cursor]) && !/^[-+]?\d/.test(normalizedLines[cursor])) {
-          title = normalizedLines[cursor++];
-        } else {
-          // Look for title in the course ID line - extract anything after the course code
-          const titleInCodeLine = codeLine.substring(codeLine.indexOf(id) + id.length).trim();
-          if (titleInCodeLine) {
-            // Remove leading separators like dash or colon
-            title = titleInCodeLine.replace(/^[-:]\s*/, "");
-          }
-        }
-      }
-
-      // Step 3: Find grade - search for a pattern that looks like a grade
-      let grade = "C"; // Default to C if no grade found
-      while (
-        cursor < normalizedLines.length &&
-        !GRADE_RE.test(normalizedLines[cursor]) &&
-        !/^[-+]?\d/.test(normalizedLines[cursor]) &&
-        !COURSE_CODE_RE.test(normalizedLines[cursor])
-      ) {
-        cursor += 1;
-      }
-
-      if (cursor < normalizedLines.length && GRADE_RE.test(normalizedLines[cursor])) {
-        grade = normalizedLines[cursor++].toUpperCase();
-      }
-
-      // Step 4: Collect numeric values until we hit the next course code
-      const numericValues: number[] = [];
-      while (cursor < normalizedLines.length && !COURSE_CODE_RE.test(normalizedLines[cursor])) {
-        // Try to extract a number from the current line
-        const numMatch = normalizedLines[cursor].match(/[-+]?(\d+(\.\d+)?)/);
-        if (numMatch) {
-          const value = parseFloat(numMatch[1]);
-          if (!isNaN(value)) {
-            numericValues.push(value);
-          }
-        }
-        cursor += 1;
-      }
-
-      // Step 5: Determine which number is credits
-      // Prefer integers between 1-5 as credits
-      let credits = 3.0; // Default
-      const creditCandidate = numericValues.find((n) => n % 1 === 0 && n >= 1 && n <= 5);
-      if (creditCandidate !== undefined) {
-        credits = creditCandidate;
-      } else if (numericValues.length > 0) {
-        // If no good candidate, use the last number
-        credits = numericValues[numericValues.length - 1];
-      }
-
-      // Step 6: Calculate grade points
-      const gradePoints =
-        gradePointValues[grade] !== undefined
-          ? parseFloat((credits * gradePointValues[grade]).toFixed(2))
-          : credits * 2.0; // Default to C (2.0) if grade not recognized
-
-      // Add the parsed course
-      courses.push({
-        id,
-        title: title || id, // Use ID as title if no title found
-        grade,
-        credits,
-        gradePoints,
-      });
-    }
-
-    return courses;
-  };
+  }, [semesters, setSemesters]);
 
   // Add a new semester
-  const addSemester = () => {
+  const addSemester = useCallback(() => {
     // If no courses data is entered, create empty semester
     if (!rawCourseData.trim()) {
       const newSemesterId = Date.now().toString();
@@ -301,19 +131,12 @@ export default function GradesPage() {
     const courses = parseCourseData(rawCourseData);
 
     if (courses.length === 0) {
-      toast({
-        title: "Error",
-        description: "Could not parse any valid courses from the input",
-        variant: "destructive",
-      });
+      toastError("Could not parse any valid courses from the input");
       return;
     }
 
     // Calculate semester totals
-    const totalCredits = courses.reduce((sum, course) => sum + course.credits, 0);
-    // totalGradePoints is just the sum of each course.gradePoints
-    const totalGradePoints = courses.reduce((sum, course) => sum + course.gradePoints, 0);
-    const gpa = totalCredits > 0 ? parseFloat((totalGradePoints / totalCredits).toFixed(2)) : 0;
+    const { totalCredits, totalGradePoints, gpa } = calculateSemesterTotals(courses);
 
     const newSemester: Semester = {
       id: Date.now().toString(),
@@ -328,36 +151,18 @@ export default function GradesPage() {
     setNewSemesterName("");
     setRawCourseData("");
     setIsDialogOpen(false);
-
-    // Semester added silently
-  };
-
-  // Create a placeholder course the user can fill in later
-  const makeBlankCourse = (): Course => ({
-    // leave user-visible fields empty
-    id: "",
-    title: "",
-    grade: "",
-    credits: 0,
-    gradePoints: 0,
-    // internal key so Drag-and-Drop stays stable
-    _uid: nanoid(6) as unknown as never,
-  });
+  }, [newSemesterName, rawCourseData, setSemesters, toastError]);
 
   // Add course to existing semester
-  const addCourseToSemester = () => {
+  const addCourseToSemester = useCallback(() => {
     if (!currentSemesterId) return;
 
-    let coursesToAdd: Course[] = [];
+    let coursesToAdd = [];
 
     if (newCourseData.trim()) {
       coursesToAdd = parseCourseData(newCourseData);
       if (coursesToAdd.length === 0) {
-        toast({
-          title: "Error",
-          description: "Could not parse any valid courses from the input",
-          variant: "destructive",
-        });
+        toastError("Could not parse any valid courses from the input");
         return;
       }
     } else {
@@ -372,15 +177,14 @@ export default function GradesPage() {
         indexMap[sem.id] = sem.courses.length; // position of first new row
         const updatedCourses = [...sem.courses, ...coursesToAdd];
 
-        const totalCredits = updatedCourses.reduce((s, c) => s + c.credits, 0);
-        const totalGradePoints = updatedCourses.reduce((s, c) => s + c.gradePoints, 0);
+        const { totalCredits, totalGradePoints, gpa } = calculateSemesterTotals(updatedCourses);
 
         return {
           ...sem,
           courses: updatedCourses,
           totalCredits,
           totalGradePoints,
-          gpa: totalCredits ? parseFloat((totalGradePoints / totalCredits).toFixed(2)) : 0,
+          gpa,
         };
       })
     );
@@ -388,53 +192,48 @@ export default function GradesPage() {
     // if user added a BLANK row, open it in edit-mode immediately
     if (!newCourseData.trim()) {
       setTimeout(() => {
-        startEditingCourse(currentSemesterId!, indexMap[currentSemesterId!], "id", "");
+        startEditingCourse(currentSemesterId, indexMap[currentSemesterId], "id", "");
       }, 0);
     }
 
     setNewCourseData("");
     setIsAddCourseDialogOpen(false);
-  };
+  }, [currentSemesterId, newCourseData, setSemesters, toastError]);
 
   // Remove a semester
-  const removeSemester = (id: string) => {
+  const removeSemester = useCallback((id: string) => {
     setSemesters((prev) => prev.filter((semester) => semester.id !== id));
-
-    // Semester removed silently
-  };
+  }, [setSemesters]);
 
   // Remove one course
-  const removeCourse = (semesterId: string, index: number) => {
+  const removeCourse = useCallback((semesterId: string, index: number) => {
     setSemesters((prev) =>
       prev.map((sem) => {
         if (sem.id !== semesterId) return sem;
         const updated = [...sem.courses];
         updated.splice(index, 1);
 
-        const totalCredits = updated.reduce((s, c) => s + c.credits, 0);
-        const totalGradePoints = updated.reduce((s, c) => s + c.gradePoints, 0);
+        const { totalCredits, totalGradePoints, gpa } = calculateSemesterTotals(updated);
 
         return {
           ...sem,
           courses: updated,
           totalCredits,
           totalGradePoints,
-          gpa: totalCredits ? parseFloat((totalGradePoints / totalCredits).toFixed(2)) : 0,
+          gpa,
         };
       })
     );
-  };
+  }, [setSemesters]);
 
   // Start editing a semester name
-  const startEditingSemesterName = (id: string, currentName: string) => {
+  const startEditingSemesterName = useCallback((id: string, currentName: string) => {
     setEditingSemesterId(id);
     setEditedSemesterName(currentName);
-
-    // Focus the input field after it renders
-  };
+  }, []);
 
   // Save edited semester name
-  const saveEditedSemesterName = (newName?: string) => {
+  const saveEditedSemesterName = useCallback((newName?: string) => {
     if (!editingSemesterId) return;
 
     setSemesters((prev) =>
@@ -447,48 +246,33 @@ export default function GradesPage() {
 
     setEditingSemesterId(null);
     setEditedSemesterName("");
-
-    // Name updated silently
-  };
+  }, [editingSemesterId, editedSemesterName, setSemesters]);
 
   // Start editing a course field
-  const startEditingCourse = (
-    semesterId: string,
-    courseIndex: number,
-    field: "id" | "title" | "grade" | "credits",
-    currentValue: string
-  ) => {
-    setEditingCourse({
-      semesterId,
-      courseIndex,
-      field,
-      value: currentValue,
-    });
-
-    // Focus the input field after it renders
-    setTimeout(() => {
-      if (inputRef.current) {
-        inputRef.current.focus();
-        inputRef.current.select();
-      }
-    }, 50);
-  };
+  const startEditingCourse = useCallback(
+    (semesterId: string, courseIndex: number, field: "id" | "title" | "grade" | "credits", currentValue: string) => {
+      setEditingCourse({
+        semesterId,
+        courseIndex,
+        field,
+        value: currentValue,
+      });
+    },
+    []
+  );
 
   // Save edited course field
-  const saveEditedCourse = (override?: string) => {
+  const saveEditedCourse = useCallback((override?: string) => {
     if (!editingCourse) return;
 
     const { semesterId, courseIndex, field } = editingCourse;
     const value = override ?? editingCourse.value;
+
     // Special validation for credits (must be a number)
     if (field === "credits") {
       const numValue = parseFloat(value);
       if (isNaN(numValue) || numValue < 0) {
-        toast({
-          title: "Invalid Credits",
-          description: "Credits must be a positive number",
-          variant: "destructive",
-        });
+        toastError("Credits must be a positive number");
         return;
       }
     }
@@ -506,25 +290,18 @@ export default function GradesPage() {
           } else if (field === "grade") {
             course.grade = value.toUpperCase();
             // Recalculate grade points
-            const gradePoint =
-              gradePointValues[course.grade] !== undefined ? gradePointValues[course.grade] : 2.0; // Default to C (2.0)
-            course.gradePoints = parseFloat((course.credits * gradePoint).toFixed(2));
+            course.gradePoints = calculateGradePoints(course.credits, course.grade);
           } else if (field === "credits") {
-            const numValue = parseFloat(value);
-            course.credits = numValue;
+            const credits = parseFloat(value);
+            course.credits = credits;
             // Recalculate grade points
-            const gradePoint =
-              gradePointValues[course.grade] !== undefined ? gradePointValues[course.grade] : 2.0; // Default to C (2.0)
-            course.gradePoints = parseFloat((numValue * gradePoint).toFixed(2));
+            course.gradePoints = calculateGradePoints(credits, course.grade);
           }
 
           updatedCourses[courseIndex] = course;
 
           // Recalculate semester totals
-          const totalCredits = updatedCourses.reduce((sum, c) => sum + c.credits, 0);
-          const totalGradePoints = updatedCourses.reduce((sum, c) => sum + c.gradePoints, 0);
-          const gpa =
-            totalCredits > 0 ? parseFloat((totalGradePoints / totalCredits).toFixed(2)) : 0;
+          const { totalCredits, totalGradePoints, gpa } = calculateSemesterTotals(updatedCourses);
 
           return {
             ...semester,
@@ -539,483 +316,183 @@ export default function GradesPage() {
     });
 
     setEditingCourse(null);
+  }, [editingCourse, setSemesters, toastError]);
 
-    // Course information updated silently
-  };
-  // ─── inline editor that feels like you’re typing in the cell ────────────
-  const EditableSpan = ({
-    value,
-    onSave,
-    align = "left",
-    numeric = false,
-  }: {
-    value: string;
-    onSave: (newVal: string) => void;
-    align?: "left" | "center";
-    numeric?: boolean;
-  }) => {
-    const ref = useRef<HTMLSpanElement>(null);
-
-    // focus + select text as soon as the span appears
-    useEffect(() => {
-      if (ref.current) {
-        ref.current.focus();
-        document.execCommand("selectAll", false);
-      }
-    }, []);
-
-    return (
-      <span
-        ref={ref}
-        contentEditable
-        suppressContentEditableWarning
-        className={`outline-none bg-transparent block ${align === "center" ? "text-center" : ""}`}
-        onBlur={() => onSave((ref.current?.innerText.trim() || (numeric ? "0" : "")) as string)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault(); // keep it one line
-            (e.target as HTMLSpanElement).blur();
-          }
-        }}
-      >
-        {value}
-      </span>
-    );
-  };
-
-  // ─── small helper so we don't repeat click logic 4× ──────────────────────
-  type EditableProps = {
-    children: string | number;
-    onEdit: () => void;
-    align?: "center" | "left";
-  };
-
-  const Editable = ({ children, onEdit, align = "left" }: EditableProps) => {
-    const isEmpty = children === "" || (typeof children === "number" && children === 0);
-
-    return (
-      <span
-        className={`cursor-text ${align === "center" ? "mx-auto" : ""}`}
-        onClick={(e) => {
-          e.stopPropagation(); // ← block Accordion toggle
-          if (isEmpty) onEdit(); // still open editor when blank
-        }}
-        onDoubleClick={(e) => {
-          e.stopPropagation(); // ← block Accordion toggle
-          onEdit(); // open editor on double‑click
-        }}
-        title={isEmpty ? "Click to edit" : "Double‑click to edit"}
-      >
-        {isEmpty ? <span className="text-gray-500">Click to edit</span> : children}
-      </span>
-    );
-  };
+  // Open course addition dialog for a specific semester
+  const openAddCourseDialog = useCallback((semesterId: string) => {
+    setCurrentSemesterId(semesterId);
+    setIsAddCourseDialogOpen(true);
+  }, []);
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10 max-w-5xl">
-      <div className="flex flex-col gap-8">
-        <div>
-          <h1 className="text-4xl font-extrabold mb-6">Grades & Forecasting</h1>
-          <div className="flex mb-8 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg justify-between items-center">
+    <div className="container py-6 max-w-6xl mx-auto">
+      <h1 className="text-3xl font-bold mb-4">Grades & GPA Calculator</h1>
+      
+      {/* Overall Stats */}
+      <OverviewStats 
+        totalCredits={overallStats.totalCredits}
+        totalGradePoints={overallStats.totalGradePoints}
+        overallGPA={overallGPA}
+      />
+
+      {/* Grade Scale Reference */}
+      <Collapsible
+        open={isGradeScaleOpen}
+        onOpenChange={setIsGradeScaleOpen}
+        className="mb-6 bg-card rounded-lg p-4 border"
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Grade Scale Reference</h2>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm">
+              {isGradeScaleOpen ? "Hide" : "Show"}
+            </Button>
+          </CollapsibleTrigger>
+        </div>
+        <CollapsibleContent className="mt-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <h3 className="text-xl font-medium">Overall GPA</h3>
-              <p className="text-4xl font-bold mt-2 min-w-[3.5ch] text-left">
-                {overallGPA.toFixed(2)}
-              </p>
+              <div className="font-medium">A = 4.0</div>
+              <div className="font-medium">A- = 3.67</div>
             </div>
             <div>
-              <h3 className="text-xl font-medium">Total Credits</h3>
-              <p className="text-4xl font-bold mt-2 min-w-[3.5ch] text-left">
-                {overallStats.totalCredits.toFixed(1)}
-              </p>
+              <div className="font-medium">B+ = 3.33</div>
+              <div className="font-medium">B = 3.0</div>
+              <div className="font-medium">B- = 2.67</div>
             </div>
             <div>
-              <h3 className="text-xl font-medium">Total Grade Points</h3>
-              <p className="text-4xl font-bold mt-2 min-w-[3.5ch] text-left">
-                {overallStats.totalGradePoints.toFixed(1)}
-              </p>
+              <div className="font-medium">C+ = 2.33</div>
+              <div className="font-medium">C = 2.0</div>
+              <div className="font-medium">C- = 1.67</div>
+            </div>
+            <div>
+              <div className="font-medium">D+ = 1.33</div>
+              <div className="font-medium">D = 1.0</div>
+              <div className="font-medium">D- = 0.67</div>
+              <div className="font-medium">F = 0.0</div>
             </div>
           </div>
+        </CollapsibleContent>
+      </Collapsible>
+
+      {/* Semesters Section */}
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold">Semesters</h2>
+          <Button onClick={() => setIsDialogOpen(true)}>Add Semester</Button>
         </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-4xl font-bold">Semester Tracking</CardTitle>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  Add Semester
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Add New Semester</DialogTitle>
-                  <DialogDescription>
-                    Enter a name for the semester and optionally add course information.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="flex flex-col gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="name">Semester Name</Label>
-                    <Input
-                      id="name"
-                      placeholder="e.g., Fall 2023"
-                      value={newSemesterName}
-                      onChange={(e) => setNewSemesterName(e.target.value)}
-                    />
+        {/* Semesters List with Drag-and-Drop */}
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="semesters">
+            {(provided) => (
+              <div
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+                className="space-y-4"
+              >
+                {organizedSections.map((section) => (
+                  <div key={section.year}>
+                    <h3 className="text-xl font-semibold mb-4">{section.year}</h3>
+                    {section.semesters.map((semester, index) => (
+                      <SemesterAccordion
+                        key={semester.id}
+                        semester={semester}
+                        index={index}
+                        editing={editingCourse}
+                        editingSemesterId={editingSemesterId}
+                        editedSemesterName={editedSemesterName}
+                        onStartEditingSemesterName={startEditingSemesterName}
+                        onSaveEditedSemesterName={saveEditedSemesterName}
+                        onStartEditingCourse={startEditingCourse}
+                        onSaveEditedCourse={saveEditedCourse}
+                        onRemoveSemester={removeSemester}
+                        onAddCourse={openAddCourseDialog}
+                        onRemoveCourse={removeCourse}
+                      />
+                    ))}
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="courseData">Course Information (Optional)</Label>
-                    <Textarea
-                      id="courseData"
-                      placeholder="Enter course information"
-                      rows={10}
-                      value={rawCourseData}
-                      onChange={(e) => setRawCourseData(e.target.value)}
-                      className="font-mono text-sm"
-                    />
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Format: Course ID, Course Title, Grade, Credits (one per line)
-                    </p>
+                ))}
+                {organizedSections.length === 0 && (
+                  <div className="bg-card rounded-lg p-6 text-center">
+                    <p className="text-muted-foreground mb-3">No semesters added yet.</p>
+                    <Button onClick={() => setIsDialogOpen(true)}>
+                      Add Your First Semester
+                    </Button>
                   </div>
-                </div>
-                <DialogFooter>
-                  <DialogClose asChild>
-                    <Button variant="outline">Cancel</Button>
-                  </DialogClose>
-                  <Button onClick={addSemester}>Add Semester</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </CardHeader>
-          <CardContent>
-            {semesters.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-500 dark:text-gray-400">No semesters added yet.</p>
-                <p className="text-gray-500 dark:text-gray-400 mt-2">
-                  Click "Add Semester" to get started.
-                </p>
+                )}
+                {provided.placeholder}
               </div>
-            ) : (
-              <DragDropContext onDragEnd={handleDragEnd}>
-                <Droppable droppableId="semesters" type="SEMESTERS">
-                  {(provided) => (
-                    <div {...provided.droppableProps} ref={provided.innerRef}>
-                      {organizedSections.map((section) => {
-                        // Skip sections with no semesters
-                        if (section.semesters.length === 0) return null;
-
-                        return (
-                          <div key={section.label} className="mb-6">
-                            <h3 className="text-lg font-semibold tracking-wider uppercase text-gray-400 mb-3">
-                              {section.label.replace(/ *Year$/i, "")}
-                            </h3>
-                            <Accordion type="single" collapsible className="w-full mb-4">
-                              {section.semesters.map((semester) => {
-                                // Find the actual index in the complete list
-                                const semesterIndex = semesters.findIndex(
-                                  (s) => s.id === semester.id
-                                );
-
-                                return (
-                                  <Draggable
-                                    key={semester.id}
-                                    draggableId={semester.id}
-                                    index={semesterIndex}
-                                  >
-                                    {(provided) => (
-                                      <div
-                                        ref={provided.innerRef}
-                                        {...provided.draggableProps}
-                                        className="mb-2"
-                                      >
-                                        <AccordionItem
-                                          value={semester.id}
-                                          className="border rounded-md overflow-hidden"
-                                        >
-                                          <ContextMenu>
-                                            <ContextMenuTrigger className="w-full block">
-                                              <AccordionTrigger
-                                                {...provided.dragHandleProps}
-                                                className="w-full px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 hover:no-underline"
-                                              >
-                                                <div className="flex items-center justify-between w-full pr-4">
-                                                  <div className="flex items-center">
-                                                    {editingSemesterId === semester.id ? (
-                                                      <EditableSpan
-                                                        value={editedSemesterName}
-                                                        onSave={(newVal) =>
-                                                          saveEditedSemesterName(newVal)
-                                                        }
-                                                      />
-                                                    ) : (
-                                                      <Editable
-                                                        onEdit={() =>
-                                                          startEditingSemesterName(
-                                                            semester.id,
-                                                            semester.name
-                                                          )
-                                                        }
-                                                      >
-                                                        {semester.name}
-                                                      </Editable>
-                                                    )}
-                                                  </div>
-                                                  <div className="flex items-center gap-5">
-                                                    <div className="text-right">
-                                                      <span className="text-sm text-gray-500">
-                                                        GPA
-                                                      </span>
-                                                      <p className="font-semibold min-w-[3ch] text-right">
-                                                        {semester.gpa.toFixed(2)}
-                                                      </p>
-                                                    </div>
-                                                    <div className="text-right">
-                                                      <span className="text-sm text-gray-500">
-                                                        Credits
-                                                      </span>
-                                                      <p className="font-semibold min-w-[3ch] text-right">
-                                                        {semester.totalCredits.toFixed(1)}
-                                                      </p>
-                                                    </div>
-                                                  </div>
-                                                </div>
-                                              </AccordionTrigger>
-                                            </ContextMenuTrigger>
-                                            <ContextMenuContent>
-                                              <ContextMenuItem
-                                                onClick={() => {
-                                                  setCurrentSemesterId(semester.id);
-                                                  setIsAddCourseDialogOpen(true);
-                                                }}
-                                              >
-                                                Add Course
-                                              </ContextMenuItem>
-                                              <ContextMenuSeparator />
-                                              <ContextMenuItem
-                                                onClick={() => removeSemester(semester.id)}
-                                                className="text-red-500 hover:text-red-600 focus:text-red-600"
-                                              >
-                                                Delete Semester
-                                              </ContextMenuItem>
-                                            </ContextMenuContent>
-                                          </ContextMenu>
-                                          <AccordionContent className="px-4 pt-2 pb-4">
-                                            <Table>
-                                              <TableHeader>
-                                                <TableRow>
-                                                  <TableHead className="w-32">Course ID</TableHead>
-                                                  <TableHead>Course Title</TableHead>
-                                                  <TableHead className="w-20 text-center">
-                                                    Grade
-                                                  </TableHead>
-                                                  <TableHead className="w-20 text-center">
-                                                    Credits
-                                                  </TableHead>
-                                                  <TableHead className="w-32 text-center">
-                                                    Grade Points
-                                                  </TableHead>
-                                                </TableRow>
-                                              </TableHeader>
-                                              <TableBody>
-                                                {semester.courses.length === 0 ? (
-                                                  <TableRow>
-                                                    <TableCell
-                                                      colSpan={5}
-                                                      className="text-center py-8 text-gray-500"
-                                                    >
-                                                      No courses added yet. Right-click the semester
-                                                      and select "Add Course" to add courses.
-                                                    </TableCell>
-                                                  </TableRow>
-                                                ) : (
-                                                  <>
-                                                    {semester.courses.map((course, i) => {
-                                                      const points =
-                                                        course.credits *
-                                                        (gradePointValues[course.grade] || 2.0);
-
-                                                      return (
-                                                        <ContextMenu>
-                                                          <ContextMenuTrigger asChild>
-                                                            <TableRow key={course._uid ?? i}>
-                                                              <TableCell className="font-medium">
-                                                                {editingCourse &&
-                                                                editingCourse.semesterId ===
-                                                                  semester.id &&
-                                                                editingCourse.courseIndex === i &&
-                                                                editingCourse.field === "id" ? (
-                                                                  <EditableSpan
-                                                                    value={editingCourse.value}
-                                                                    onSave={saveEditedCourse}
-                                                                    /* add align / numeric if the table shows that column centered / numeric */
-                                                                    align="center" // ← only where noted
-                                                                    numeric // ← only for Credits
-                                                                  />
-                                                                ) : (
-                                                                  <Editable
-                                                                    onEdit={() =>
-                                                                      startEditingCourse(
-                                                                        semester.id,
-                                                                        i,
-                                                                        "id",
-                                                                        course.id
-                                                                      )
-                                                                    }
-                                                                  >
-                                                                    {course.id}
-                                                                  </Editable>
-                                                                )}
-                                                              </TableCell>
-                                                              <TableCell>
-                                                                {editingCourse &&
-                                                                editingCourse.semesterId ===
-                                                                  semester.id &&
-                                                                editingCourse.courseIndex === i &&
-                                                                editingCourse.field === "title" ? (
-                                                                  <EditableSpan
-                                                                    value={editingCourse.value}
-                                                                    onSave={saveEditedCourse}
-                                                                  />
-                                                                ) : (
-                                                                  <Editable
-                                                                    onEdit={() =>
-                                                                      startEditingCourse(
-                                                                        semester.id,
-                                                                        i,
-                                                                        "title",
-                                                                        course.title
-                                                                      )
-                                                                    }
-                                                                  >
-                                                                    {course.title}
-                                                                  </Editable>
-                                                                )}
-                                                              </TableCell>
-                                                              <TableCell className="text-center">
-                                                                {editingCourse &&
-                                                                editingCourse.semesterId ===
-                                                                  semester.id &&
-                                                                editingCourse.courseIndex === i &&
-                                                                editingCourse.field === "grade" ? (
-                                                                  <EditableSpan
-                                                                    value={editingCourse.value}
-                                                                    onSave={saveEditedCourse}
-                                                                    /* add align / numeric if the table shows that column centered / numeric */
-                                                                    align="center" // ← only where noted
-                                                                    numeric // ← only for Credits
-                                                                  />
-                                                                ) : (
-                                                                  <Editable
-                                                                    onEdit={() =>
-                                                                      startEditingCourse(
-                                                                        semester.id,
-                                                                        i,
-                                                                        "grade",
-                                                                        course.grade
-                                                                      )
-                                                                    }
-                                                                    align="center"
-                                                                  >
-                                                                    {course.grade}
-                                                                  </Editable>
-                                                                )}
-                                                              </TableCell>
-                                                              <TableCell className="text-center">
-                                                                {editingCourse &&
-                                                                editingCourse.semesterId ===
-                                                                  semester.id &&
-                                                                editingCourse.courseIndex === i &&
-                                                                editingCourse.field ===
-                                                                  "credits" ? (
-                                                                  <EditableSpan
-                                                                    value={editingCourse.value}
-                                                                    onSave={saveEditedCourse}
-                                                                    /* add align / numeric if the table shows that column centered / numeric */
-                                                                    align="center" // ← only where noted
-                                                                    numeric // ← only for Credits
-                                                                  />
-                                                                ) : (
-                                                                  <Editable
-                                                                    onEdit={() =>
-                                                                      startEditingCourse(
-                                                                        semester.id,
-                                                                        i,
-                                                                        "credits",
-                                                                        course.credits.toString()
-                                                                      )
-                                                                    }
-                                                                    align="center"
-                                                                  >
-                                                                    {course.credits.toFixed(1)}
-                                                                  </Editable>
-                                                                )}
-                                                              </TableCell>
-                                                              <TableCell className="text-center">
-                                                                {points.toFixed(2)}
-                                                              </TableCell>
-                                                            </TableRow>
-                                                          </ContextMenuTrigger>
-                                                          <ContextMenuContent>
-                                                            <ContextMenuItem
-                                                              onClick={() =>
-                                                                removeCourse(semester.id, i)
-                                                              }
-                                                              className="text-red-500 hover:text-red-600 focus:text-red-600"
-                                                            >
-                                                              Delete Course
-                                                            </ContextMenuItem>
-                                                          </ContextMenuContent>
-                                                        </ContextMenu>
-                                                      );
-                                                    })}
-                                                  </>
-                                                )}
-                                              </TableBody>
-                                            </Table>
-                                          </AccordionContent>
-                                        </AccordionItem>
-                                      </div>
-                                    )}
-                                  </Draggable>
-                                );
-                              })}
-                            </Accordion>
-                          </div>
-                        );
-                      })}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </DragDropContext>
             )}
-          </CardContent>
-        </Card>
+          </Droppable>
+        </DragDropContext>
       </div>
 
-      {/* Dialog for adding course to existing semester */}
-      <Dialog open={isAddCourseDialogOpen} onOpenChange={setIsAddCourseDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+      {/* Add Semester Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Add Course</DialogTitle>
-            <DialogDescription>Enter course information to add to this semester.</DialogDescription>
+            <DialogTitle>Add Semester</DialogTitle>
+            <DialogDescription>
+              Enter a semester name and paste course information.
+            </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="courseData">Course Information</Label>
+          <div className="grid gap-4">
+            <div>
+              <Label htmlFor="semesterName">Semester Name</Label>
+              <Input
+                id="semesterName"
+                value={newSemesterName}
+                onChange={(e) => setNewSemesterName(e.target.value)}
+                placeholder="Fall 2023"
+              />
+            </div>
+            <div>
+              <Label htmlFor="courseData">Course Information (Optional)</Label>
               <Textarea
                 id="courseData"
-                placeholder="Enter course information"
                 rows={10}
-                value={newCourseData}
-                onChange={(e) => setNewCourseData(e.target.value)}
+                value={rawCourseData}
+                onChange={(e) => setRawCourseData(e.target.value)}
+                placeholder={`MATH1101\nCalculus I\nA\n4\n\nPHYS1101\nIntroductory Physics\nB+\n3`}
                 className="font-mono text-sm"
               />
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-muted-foreground mt-1">
                 Format: Course ID, Course Title, Grade, Credits (one per line)
               </p>
             </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button onClick={addSemester}>Add Semester</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Course Dialog */}
+      <Dialog open={isAddCourseDialogOpen} onOpenChange={setIsAddCourseDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add Course</DialogTitle>
+            <DialogDescription>
+              Enter course information or leave blank to add an empty course.
+            </DialogDescription>
+          </DialogHeader>
+          <div>
+            <Label htmlFor="courseData">Course Information</Label>
+            <Textarea
+              id="courseData"
+              rows={6}
+              value={newCourseData}
+              onChange={(e) => setNewCourseData(e.target.value)}
+              placeholder={`MATH1101\nCalculus I\nA\n4`}
+              className="font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Format: Course ID, Course Title, Grade, Credits (one per line)
+            </p>
           </div>
           <DialogFooter>
             <DialogClose asChild>
@@ -1025,42 +502,6 @@ export default function GradesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Collapsible showing grade point values */}
-      <Collapsible
-        open={isGradeScaleOpen}
-        onOpenChange={setIsGradeScaleOpen}
-        className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg w-72 z-10 mx-auto overflow-hidden"
-      >
-        <CollapsibleTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full flex justify-between items-center p-4"
-          >
-            <span>Grade Point Scale</span>
-            <span>{isGradeScaleOpen ? "▼" : "▲"}</span>
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="px-0 pt-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-1/2 px-6">Grade</TableHead>
-                <TableHead className="w-1/2 px-6 text-right">Points</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Object.entries(gradePointValues).map(([grade, points]) => (
-                <TableRow key={grade}>
-                  <TableCell className="px-6">{grade}</TableCell>
-                  <TableCell className="px-6 text-right">{points.toFixed(2)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CollapsibleContent>
-      </Collapsible>
     </div>
   );
 }
