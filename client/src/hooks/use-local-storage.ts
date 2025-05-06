@@ -50,7 +50,7 @@ export function useLocalStorage<T>(
     }
   };
 
-  // Update localStorage if the key changes
+  // Only update localStorage if the key changes, not the initialValue
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
@@ -61,12 +61,15 @@ export function useLocalStorage<T>(
       if (item) {
         setStoredValue(JSON.parse(item));
       } else {
+        // Only write to localStorage if no value exists
         window.localStorage.setItem(key, JSON.stringify(initialValue));
       }
     } catch (error) {
       console.error("Error updating localStorage:", error);
     }
-  }, [key, initialValue]);
+  // We intentionally exclude initialValue from dependencies to avoid infinite renders
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
 
   return [storedValue, setValue];
 }
