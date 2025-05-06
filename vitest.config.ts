@@ -1,21 +1,43 @@
 import { defineConfig } from 'vitest/config';
-import path from 'path';
+import react from '@vitejs/plugin-react';
+import tsconfigPaths from 'vite-tsconfig-paths';
+import { resolve } from 'path';
 
 export default defineConfig({
+  plugins: [react(), tsconfigPaths()],
   test: {
     globals: true,
-    environment: 'node',
-    setupFiles: ['./tests/setup.ts'],
-    include: ['tests/**/*.test.ts'],
+    environment: 'jsdom',
+    setupFiles: ['./tests/setup-component.tsx'],
+    include: ['./tests/**/*.{test,spec}.{ts,tsx}'],
     coverage: {
+      provider: 'istanbul',
       reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/']
-    }
+      reportsDirectory: './coverage',
+      exclude: [
+        'node_modules/',
+        'dist/',
+        '.github/',
+        'coverage/',
+        'public/',
+        '**/*.d.ts',
+        '**/*.config.{js,ts}',
+        '**/setup-*.{js,ts,tsx}',
+        'tests/mocks/**',
+      ],
+      thresholds: {
+        statements: 70,
+        branches: 70,
+        functions: 70,
+        lines: 70,
+      },
+    },
   },
   resolve: {
     alias: {
-      '@shared': path.resolve(__dirname, './shared'),
-      '@db': path.resolve(__dirname, './db')
-    }
-  }
+      '@': resolve(__dirname, './client/src'),
+      '@shared': resolve(__dirname, './shared'),
+      '@db': resolve(__dirname, './db'),
+    },
+  },
 });
