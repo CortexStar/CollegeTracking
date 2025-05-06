@@ -8,30 +8,41 @@ This repository contains a full-stack web application built with a React fronten
 - Track progress through problem sets
 - Manage solutions and lecture links
 - View course materials organized by chapters and sections
+- Track and forecast academic grades
 
-The architecture follows a client-server model with a clear separation between frontend and backend components. The application is designed to run in a Replit environment, with specific configurations for that platform.
+The architecture follows a monorepo structure with clear separation between frontend and backend components. The application is designed to run in a Replit environment, with specific configurations for that platform.
 
 ## 2. System Architecture
 
 ### 2.1 High-Level Architecture
 
-The system follows a modern web application architecture with three main layers:
+The system follows a modern web application architecture with a monorepo structure and three main layers:
 
 1. **Frontend Layer**: React-based client application with UI components
 2. **Backend Layer**: Express.js API server handling business logic and data operations
 3. **Data Layer**: PostgreSQL database using Drizzle ORM for data access
 
 ```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   React Client  │────▶│  Express Server │────▶│  PostgreSQL DB  │
-│   (Browser)     │◀────│   (API Server)  │◀────│  (Data Storage) │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-                                │
-                                ▼
-                        ┌─────────────────┐
-                        │   File Storage  │
-                        │ (Local/S3 Files)│
-                        └─────────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│                      pnpm Monorepo                            │
+│                                                               │
+│  ┌─────────────┐     ┌─────────────┐     ┌─────────────────┐  │
+│  │    client   │────▶│    server   │────▶│      db         │  │
+│  │  (React UI) │◀────│  (Express)  │◀────│  (Drizzle ORM)  │  │
+│  └─────────────┘     └─────────────┘     └─────────────────┘  │
+│        │                    │                    │             │
+│        ▼                    ▼                    ▼             │
+│  ┌─────────────┐     ┌─────────────┐     ┌─────────────────┐  │
+│  │   shared    │     │  packages/  │     │  PostgreSQL DB  │  │
+│  │   (Types)   │     │   queues    │────▶│  (Data Storage) │  │
+│  └─────────────┘     └─────────────┘     └─────────────────┘  │
+│                             │                                  │
+│                             ▼                                  │
+│                      ┌─────────────────┐                       │
+│                      │   File Storage  │                       │
+│                      │ (Local/S3 Files)│                       │
+│                      └─────────────────┘                       │
+└───────────────────────────────────────────────────────────────┘
 ```
 
 ### 2.2 Client-Server Communication

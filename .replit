@@ -1,6 +1,7 @@
 run = "pnpm turbo run dev --parallel"
 onBoot = "pnpm --filter api run db:migrate"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
+modules = ["nodejs-20"]
 
 [nix]
 channel = "stable-24_05"
