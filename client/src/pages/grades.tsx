@@ -127,7 +127,19 @@ export default function GradesPage() {
   useEffect(() => {
     const savedSemesters = localStorage.getItem("gradeSemesters");
     if (savedSemesters) {
-      setSemesters(JSON.parse(savedSemesters));
+      // ─── one‑time migration for older bad totals ─────────────
+      const fixed = JSON.parse(savedSemesters).map((sem: Semester) => {
+        const totalCredits = sem.courses.reduce((s, c) => s + c.credits, 0);
+        const totalGradePoints = sem.courses.reduce((s, c) => s + c.gradePoints, 0);
+        const gpa =
+          totalCredits > 0
+            ? parseFloat((totalGradePoints / totalCredits).toFixed(2))
+            : 0;
+        return { ...sem, totalCredits, totalGradePoints, gpa };
+      });
+      setSemesters(fixed);
+      // overwrite storage so it stays clean next time
+      localStorage.setItem("gradeSemesters", JSON.stringify(fixed));
     }
   }, []);
 
@@ -306,7 +318,8 @@ export default function GradesPage() {
     
     // Calculate semester totals
     const totalCredits = courses.reduce((sum, course) => sum + course.credits, 0);
-    const totalGradePoints = courses.reduce((sum, course) => sum + (course.credits * course.gradePoints), 0);
+    // totalGradePoints is just the sum of each course.gradePoints
+    const totalGradePoints = courses.reduce((sum, course) => sum + course.gradePoints, 0);
     const gpa = totalCredits > 0 ? parseFloat((totalGradePoints / totalCredits).toFixed(2)) : 0;
     
     const newSemester: Semester = {
