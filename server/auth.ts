@@ -10,6 +10,7 @@ import { db } from "../db/index.js";
 import { users, insertUserSchema } from "../shared/schema.js";
 import { eq } from "drizzle-orm";
 import { env } from "../shared/env.js";
+import { authLogger } from "../shared/logger.js";
 
 // Type augmentation for Express.User
 declare global {
@@ -48,7 +49,7 @@ export async function hashPassword(password: string): Promise<string> {
       hashLength: 32,         // 32 bytes hash
     });
   } catch (error) {
-    console.error("Error hashing password:", error);
+    authLogger.error("Error hashing password:", error);
     throw new Error("Failed to hash password");
   }
 }
@@ -64,7 +65,7 @@ export async function comparePasswords(supplied: string, stored: string): Promis
   try {
     return await argon2.verify(stored, supplied);
   } catch (error) {
-    console.error("Error verifying password:", error);
+    authLogger.error("Error verifying password:", error);
     return false;
   }
 }
