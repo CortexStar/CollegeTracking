@@ -2,11 +2,13 @@ import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { Redirect, Route, RouteComponentProps } from "wouter";
 import { ComponentType, FC } from "react";
+import { AUTH_ENABLED } from "@/lib/config";
 
 /**
  * ProtectedRoute Component
  * 
- * A wrapper for Route components that requires authentication.
+ * A wrapper for Route components that requires authentication when AUTH_ENABLED is true.
+ * - If auth is disabled: renders the component directly
  * - If user is loading: shows loading spinner
  * - If user is not authenticated: redirects to auth page
  * - If user is authenticated: renders the component
@@ -19,6 +21,11 @@ export function ProtectedRoute({
   component: ComponentType<any>;
 }) {
   const { user, isLoading } = useAuth();
+
+  // If authentication is disabled, render the component directly
+  if (!AUTH_ENABLED) {
+    return <Route path={path} component={Component} />;
+  }
 
   // Create a component to handle the protected content
   const ProtectedComponent: FC<RouteComponentProps> = (props) => {

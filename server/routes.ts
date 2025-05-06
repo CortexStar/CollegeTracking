@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import multer from "multer";
 import { setupAuth } from "./auth";
 import { setupWebSocketServer } from "./websocket";
+import { AUTH_ENABLED, requireAuth } from "./config/auth";
 
 // Configure multer for storing uploads temporarily in memory
 const upload = multer({
@@ -23,13 +24,22 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup authentication
-  setupAuth(app);
+  // Setup authentication only if enabled
+  if (AUTH_ENABLED) {
+    setupAuth(app);
+    
+    // Apply authentication middleware to protected routes
+    // These routes will be protected only when AUTH_ENABLED is true
+    app.use("/api/user", requireAuth);
+    
+    // Note: we're intentionally not protecting book routes
+    // to allow guest mode access to books
+  }
   // API routes for books
   app.get('/api/books', async (req, res) => {
     try {
       // Get userId from the authenticated user or fallback to anonymous
-      const userId = req.isAuthenticated() ? req.user.id : "anonymous-user";
+      const userId = req.isAuthenticated() ? String(req.user.id) : "anonymous-user";
       const books = await storage.getUserBooks(userId);
       return res.status(200).json(books);
     } catch (error) {
@@ -63,7 +73,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const { title, author } = req.body;
       // Get userId from the authenticated user or fallback to anonymous
-      const userId = req.isAuthenticated() ? req.user.id : "anonymous-user";
+      const userId = req.isAuthenticated() ? String(req.user.id) : "anonymous-user";
       
       if (!title) {
         return res.status(400).json({ error: 'Title is required' });
@@ -132,7 +142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get userId from the authenticated user or fallback to anonymous
-      const userId = req.isAuthenticated() ? req.user.id : "anonymous-user";
+      const userId = req.isAuthenticated() ? String(req.user.id) : "anonymous-user";
       
       // Check if the book belongs to the current user
       if (book.userId !== userId && book.userId !== "anonymous-user") {
