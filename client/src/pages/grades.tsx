@@ -353,7 +353,7 @@ export default function GradesPage() {
               >
                 {organizedSections.map((section) => (
                   <div key={section.year}>
-                    <h3 className="text-xl font-semibold mb-4">{section.year}</h3>
+                    <h3 className="text-xl font-semibold mb-4 text-primary">{section.year}</h3>
                     {section.semesters.map((semester, index) => (
                       <SemesterDropdown
                         key={semester.id}

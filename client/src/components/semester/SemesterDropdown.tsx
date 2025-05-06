@@ -100,7 +100,7 @@ const SemesterDropdown: React.FC<SemesterDropdownProps> = ({
                         className="font-medium text-base text-left flex-1 flex items-center"
                       >
                         <div 
-                          className="w-auto" 
+                          className="w-auto text-muted-foreground" 
                           onClick={(e) => {
                             e.stopPropagation();
                             if (editingSemesterId !== semester.id) {
