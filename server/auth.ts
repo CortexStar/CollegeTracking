@@ -102,7 +102,7 @@ export function setupAuth(app: Express) {
       tableName: "session", // Name of the session table
       createTableIfMissing: true, // Auto-create session table if it doesn't exist
     }),
-    secret: env.SESSION_SECRET,
+    secret: env.SESSION_SECRET || "dev_session_secret_at_least_32_chars_long", // Fallback for development
     resave: false,
     saveUninitialized: false,
     cookie: {
