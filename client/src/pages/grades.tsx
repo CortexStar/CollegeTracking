@@ -797,12 +797,14 @@ const addCourseToSemester = () => {
                                                               <span 
                                                                 className="cursor-text"
                                                                 onClick={(e) => {
-                                                                  if (e.detail === 3) { // Triple click
+                                                                  const isEmpty = course.id === "";
+                                                                  
+                                                                  if (isEmpty || e.detail === 3) { // Single click for empty fields, triple click otherwise
                                                                     e.stopPropagation();
                                                                     startEditingCourse(semester.id, i, 'id', course.id);
                                                                   }
                                                                 }}
-                                                                title="Triple-click to edit"
+                                                                title={course.id ? "Triple-click to edit" : "Click to edit"}
                                                               >
                                                                 {course.id}
                                                               </span>
@@ -838,12 +840,14 @@ const addCourseToSemester = () => {
                                                               <span 
                                                                 className="cursor-text"
                                                                 onClick={(e) => {
-                                                                  if (e.detail === 3) { // Triple click
+                                                                  const isEmpty = course.title === "";
+                                                                  
+                                                                  if (isEmpty || e.detail === 3) { // Single click for empty fields, triple click otherwise
                                                                     e.stopPropagation();
                                                                     startEditingCourse(semester.id, i, 'title', course.title);
                                                                   }
                                                                 }}
-                                                                title="Triple-click to edit"
+                                                                title={course.title ? "Triple-click to edit" : "Click to edit"}
                                                               >
                                                                 {course.title}
                                                               </span>
@@ -879,12 +883,14 @@ const addCourseToSemester = () => {
                                                               <span 
                                                                 className="cursor-text"
                                                                 onClick={(e) => {
-                                                                  if (e.detail === 3) { // Triple click
+                                                                  const isEmpty = course.grade === "";
+                                                                  
+                                                                  if (isEmpty || e.detail === 3) { // Single click for empty fields, triple click otherwise
                                                                     e.stopPropagation();
                                                                     startEditingCourse(semester.id, i, 'grade', course.grade);
                                                                   }
                                                                 }}
-                                                                title="Triple-click to edit"
+                                                                title={course.grade ? "Triple-click to edit" : "Click to edit"}
                                                               >
                                                                 {course.grade}
                                                               </span>
@@ -920,12 +926,14 @@ const addCourseToSemester = () => {
                                                               <span 
                                                                 className="cursor-text"
                                                                 onClick={(e) => {
-                                                                  if (e.detail === 3) { // Triple click
+                                                                  const isEmpty = course.credits === 0;
+                                                                  
+                                                                  if (isEmpty || e.detail === 3) { // Single click for empty fields, triple click otherwise
                                                                     e.stopPropagation();
                                                                     startEditingCourse(semester.id, i, 'credits', course.credits.toString());
                                                                   }
                                                                 }}
-                                                                title="Triple-click to edit"
+                                                                title={course.credits !== 0 ? "Triple-click to edit" : "Click to edit"}
                                                               >
                                                                 {course.credits.toFixed(1)}
                                                               </span>
