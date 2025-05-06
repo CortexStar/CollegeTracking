@@ -326,7 +326,7 @@ export default function GradesPage() {
 
   return (
     <div className="container py-6 max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold mb-4">Grades & GPA Calculator</h1>
+      <h1 className="text-3xl font-bold mb-4">Grades Summary</h1>
       
       {/* Overall Stats */}
       <OverviewStats 
@@ -338,44 +338,9 @@ export default function GradesPage() {
       {/* Semesters Section */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold">Semesters</h2>
-          <Button onClick={() => setIsDialogOpen(true)}>Add Semester</Button>
+          <h2 className="text-3xl font-bold">Semesters</h2>
+          <Button size="sm" variant="outline" onClick={() => setIsDialogOpen(true)}>Add Semester</Button>
         </div>
-      
-        {/* Grade Scale Reference */}
-        <Collapsible
-          open={isGradeScaleOpen}
-          onOpenChange={setIsGradeScaleOpen}
-          className="mb-2 bg-card rounded-lg p-2 border-none max-w-md mx-auto"
-        >
-          <CollapsibleTrigger className="w-full py-1 flex justify-center items-center text-sm text-muted-foreground">
-            {isGradeScaleOpen ? "Hide Grade Scale" : "Show Grade Scale"}
-          </CollapsibleTrigger>
-          <CollapsibleContent className="pt-2">
-            <div className="grid grid-cols-4 gap-x-4 text-xs">
-              <div className="space-y-1">
-                <div>A = 4.0</div>
-                <div>A- = 3.67</div>
-              </div>
-              <div className="space-y-1">
-                <div>B+ = 3.33</div>
-                <div>B = 3.0</div>
-                <div>B- = 2.67</div>
-              </div>
-              <div className="space-y-1">
-                <div>C+ = 2.33</div>
-                <div>C = 2.0</div>
-                <div>C- = 1.67</div>
-              </div>
-              <div className="space-y-1">
-                <div>D+ = 1.33</div>
-                <div>D = 1.0</div>
-                <div>D- = 0.67</div>
-                <div>F = 0.0</div>
-              </div>
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
 
         {/* Semesters List with Drag-and-Drop */}
         <DragDropContext onDragEnd={handleDragEnd}>
@@ -421,6 +386,41 @@ export default function GradesPage() {
             )}
           </Droppable>
         </DragDropContext>
+        
+        {/* Grade Scale Reference */}
+        <Collapsible
+          open={isGradeScaleOpen}
+          onOpenChange={setIsGradeScaleOpen}
+          className="mt-6 mb-2 bg-card rounded-lg p-2 border-none max-w-md mx-auto"
+        >
+          <CollapsibleTrigger className="w-full py-1 flex justify-center items-center text-sm text-muted-foreground">
+            {isGradeScaleOpen ? "Hide Grade Scale" : "Show Grade Scale"}
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-2">
+            <div className="grid grid-cols-4 gap-x-4 text-xs">
+              <div className="space-y-1">
+                <div>A = 4.0</div>
+                <div>A- = 3.67</div>
+              </div>
+              <div className="space-y-1">
+                <div>B+ = 3.33</div>
+                <div>B = 3.0</div>
+                <div>B- = 2.67</div>
+              </div>
+              <div className="space-y-1">
+                <div>C+ = 2.33</div>
+                <div>C = 2.0</div>
+                <div>C- = 1.67</div>
+              </div>
+              <div className="space-y-1">
+                <div>D+ = 1.33</div>
+                <div>D = 1.0</div>
+                <div>D- = 0.67</div>
+                <div>F = 0.0</div>
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
 
       {/* Add Semester Dialog */}
