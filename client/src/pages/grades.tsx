@@ -335,52 +335,47 @@ export default function GradesPage() {
         overallGPA={overallGPA}
       />
 
-      {/* Grade Scale Reference */}
-      <Collapsible
-        open={isGradeScaleOpen}
-        onOpenChange={setIsGradeScaleOpen}
-        className="mb-6 bg-card rounded-lg p-4 border"
-      >
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Grade Scale Reference</h2>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm">
-              {isGradeScaleOpen ? "Hide" : "Show"}
-            </Button>
-          </CollapsibleTrigger>
-        </div>
-        <CollapsibleContent className="mt-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <div className="font-medium">A = 4.0</div>
-              <div className="font-medium">A- = 3.67</div>
-            </div>
-            <div>
-              <div className="font-medium">B+ = 3.33</div>
-              <div className="font-medium">B = 3.0</div>
-              <div className="font-medium">B- = 2.67</div>
-            </div>
-            <div>
-              <div className="font-medium">C+ = 2.33</div>
-              <div className="font-medium">C = 2.0</div>
-              <div className="font-medium">C- = 1.67</div>
-            </div>
-            <div>
-              <div className="font-medium">D+ = 1.33</div>
-              <div className="font-medium">D = 1.0</div>
-              <div className="font-medium">D- = 0.67</div>
-              <div className="font-medium">F = 0.0</div>
-            </div>
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
-
       {/* Semesters Section */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">Semesters</h2>
           <Button onClick={() => setIsDialogOpen(true)}>Add Semester</Button>
         </div>
+      
+        {/* Grade Scale Reference */}
+        <Collapsible
+          open={isGradeScaleOpen}
+          onOpenChange={setIsGradeScaleOpen}
+          className="mb-2 bg-card rounded-lg p-2 border-none max-w-md mx-auto"
+        >
+          <CollapsibleTrigger className="w-full py-1 flex justify-center items-center text-sm text-muted-foreground">
+            {isGradeScaleOpen ? "Hide Grade Scale" : "Show Grade Scale"}
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-2">
+            <div className="grid grid-cols-4 gap-x-4 text-xs">
+              <div className="space-y-1">
+                <div>A = 4.0</div>
+                <div>A- = 3.67</div>
+              </div>
+              <div className="space-y-1">
+                <div>B+ = 3.33</div>
+                <div>B = 3.0</div>
+                <div>B- = 2.67</div>
+              </div>
+              <div className="space-y-1">
+                <div>C+ = 2.33</div>
+                <div>C = 2.0</div>
+                <div>C- = 1.67</div>
+              </div>
+              <div className="space-y-1">
+                <div>D+ = 1.33</div>
+                <div>D = 1.0</div>
+                <div>D- = 0.67</div>
+                <div>F = 0.0</div>
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* Semesters List with Drag-and-Drop */}
         <DragDropContext onDragEnd={handleDragEnd}>
