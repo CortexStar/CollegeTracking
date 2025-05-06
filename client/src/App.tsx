@@ -1,20 +1,27 @@
-import { Suspense, lazy } from "react";
-import { Switch, Route } from "wouter";
+import { Suspense, lazy, ComponentType } from "react";
+import { Switch, Route, RouteComponentProps } from "wouter";
 import { AppProviders } from "@/providers";
 import Layout from "@/components/layout";
 import { Loader2 } from "lucide-react";
 import { ProtectedRoute } from "@/lib/protected-route";
 
-// Lazy-loaded components for improved performance
-const Landing = lazy(() => import("@/pages/landing"));
-const Home = lazy(() => import("@/pages/home"));
-const TextbookPage = lazy(() => import("@/pages/textbook"));
-const GradesPage = lazy(() => import("@/pages/grades"));
-const BookDefault = lazy(() => import("@/pages/book"));
-const BookAddPage = lazy(() => import("@/pages/books/new"));
-const BookDetailPage = lazy(() => import("@/pages/books/[id]"));
-const AuthPage = lazy(() => import("@/pages/auth-page"));
-const NotFound = lazy(() => import("@/pages/not-found"));
+// Create a wrapper component for Route compatibility
+const RouteWrapper = <P extends {}>(Component: ComponentType<P>) => {
+  // This component ensures it's compatible with Wouter's Route component expectation
+  const WrappedComponent = (props: RouteComponentProps) => <Component {...props as any} />;
+  return WrappedComponent;
+};
+
+// Lazy-loaded components for improved performance with proper typing
+const Landing = RouteWrapper(lazy(() => import("@/pages/landing")));
+const Home = RouteWrapper(lazy(() => import("@/pages/home")));
+const TextbookPage = RouteWrapper(lazy(() => import("@/pages/textbook")));
+const GradesPage = RouteWrapper(lazy(() => import("@/pages/grades")));
+const BookDefault = RouteWrapper(lazy(() => import("@/pages/book")));
+const BookAddPage = RouteWrapper(lazy(() => import("@/pages/books/new")));
+const BookDetailPage = RouteWrapper(lazy(() => import("@/pages/books/[id]")));
+const AuthPage = RouteWrapper(lazy(() => import("@/pages/auth-page")));
+const NotFound = RouteWrapper(lazy(() => import("@/pages/not-found")));
 
 // Loading fallback for lazy-loaded components
 const LoadingFallback = () => (

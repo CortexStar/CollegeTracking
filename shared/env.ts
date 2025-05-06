@@ -26,7 +26,7 @@ const awsSchema = z.object({
 
 // Define auth variables schema
 const authSchema = z.object({
-  SESSION_SECRET: z.string().min(32)
+  SESSION_SECRET: z.string().min(32).optional()
     .describe("Secret key for session management, must be at least 32 characters long"),
   COOKIE_MAX_AGE: z.string().transform(val => parseInt(val, 10)).default("86400000")
     .describe("Maximum age of cookies in milliseconds, defaults to 24 hours"),
@@ -99,5 +99,15 @@ function parseEnv() {
   }
 }
 
-// Export the validated environment variables
-export const env = parseEnv();
+// Export the validated environment variables with defaults for session secret in development
+const envWithDefaults = parseEnv();
+
+if (process.env.NODE_ENV !== 'production' && !process.env.SESSION_SECRET) {
+  console.warn('⚠️ Using default SESSION_SECRET in development. Do not use in production!');
+  // @ts-ignore - We know we're adding a field that might be missing
+  envWithDefaults.SESSION_SECRET = 'dev_session_secret_at_least_32_chars_long';
+  // @ts-ignore - We're adding COOKIE_MAX_AGE if missing
+  envWithDefaults.COOKIE_MAX_AGE = 86400000; // 24 hours
+}
+
+export const env = envWithDefaults;
