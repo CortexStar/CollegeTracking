@@ -497,11 +497,11 @@ const addCourseToSemester = () => {
   };
 
   // Save edited course field
-  const saveEditedCourse = () => {
+  const saveEditedCourse = (override?: string) => {
     if (!editingCourse) return;
     
-    const { semesterId, courseIndex, field, value } = editingCourse;
-    
+    const { semesterId, courseIndex, field } = editingCourse;
+    const value = override ?? editingCourse.value; 
     // Special validation for credits (must be a number)
     if (field === 'credits') {
       const numValue = parseFloat(value);
@@ -565,6 +565,52 @@ const addCourseToSemester = () => {
     
     // Course information updated silently
   };
+  // ─── inline editor that feels like you’re typing in the cell ────────────
+  const EditableSpan = ({
+    value,
+    onSave,
+    align = "left",
+    numeric = false,
+  }: {
+    value: string;
+    onSave: (newVal: string) => void;
+    align?: "left" | "center";
+    numeric?: boolean;
+  }) => {
+    const ref = useRef<HTMLSpanElement>(null);
+
+    // focus + select text as soon as the span appears
+    useEffect(() => {
+      if (ref.current) {
+        ref.current.focus();
+        document.execCommand("selectAll", false);
+      }
+    }, []);
+
+    return (
+      <span
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        className={`outline-none bg-transparent block ${
+          align === "center" ? "text-center" : ""
+        }`}
+        onBlur={() =>
+          onSave(
+            (ref.current?.innerText.trim() || (numeric ? "0" : "")) as string
+          )
+        }
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault(); // keep it one line
+            (e.target as HTMLSpanElement).blur();
+          }
+        }}
+      >
+        {value}
+      </span>
+    );
+  };
 
   // ─── small helper so we don't repeat click logic 4× ──────────────────────
   type EditableProps = {
@@ -604,7 +650,7 @@ const addCourseToSemester = () => {
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10 max-w-5xl">
       <div className="flex flex-col gap-8">
         <div>
-          <h1 className="text-3xl font-bold mb-4">Grades & Forecasting</h1>
+          <h1 className="text-4xl font-extrabold mb-6">Grades & Forecasting</h1>
           <div className="flex mb-8 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg justify-between items-center">
             <div>
               <h3 className="text-xl font-medium">Overall GPA</h3>
@@ -623,7 +669,7 @@ const addCourseToSemester = () => {
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-2xl">Semesters</CardTitle>
+            <CardTitle className="text-4xl font-bold">Semester Tracking</CardTitle>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">Add Semester</Button>
@@ -689,8 +735,8 @@ const addCourseToSemester = () => {
                         
                         return (
                           <div key={section.label} className="mb-6">
-                            <h3 className="text-xl font-bold mb-2 text-gray-700 dark:text-gray-300">
-                              {section.label}
+                            <h3 className="text-lg font-semibold tracking-wider uppercase text-gray-400 mb-3">
+                              {section.label.replace(/ *Year$/i, "")}
                             </h3>
                             <Accordion type="single" collapsible className="w-full mb-4">
                               {section.semesters.map((semester) => {
@@ -714,7 +760,7 @@ const addCourseToSemester = () => {
                                             <ContextMenuTrigger className="w-full block">
                                               <AccordionTrigger 
                                                 {...provided.dragHandleProps}
-                                                className="w-full px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800"
+                                                className="w-full px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 hover:no-underline"
                                               >
                                                 <div className="flex items-center justify-between w-full pr-4">
                                                   <div className="flex items-center">
@@ -742,16 +788,17 @@ const addCourseToSemester = () => {
                                                         />
                                                       </form>
                                                     ) : (
-                                                      <span 
-                                                        className="text-xl font-medium cursor-text"
-                                                        onDoubleClick={(e) => {
-                                                          e.stopPropagation();
-                                                          startEditingSemesterName(semester.id, semester.name);
-                                                        }}
-                                                        title="Double-click to edit"
-                                                      >
-                                                        {semester.name}
-                                                      </span>
+                                                <span
+                                                  className="text-base font-medium cursor-text"
+                                                  onClick={(e) => e.stopPropagation()}                 // ← new line
+                                                  onDoubleClick={(e) => {
+                                                    e.stopPropagation();
+                                                    startEditingSemesterName(semester.id, semester.name);
+                                                  }}
+                                                  title="Double-click to edit"
+                                                >
+                                                  {semester.name}
+                                                </span>
                                                     )}
                                                   </div>
                                                   <div className="flex items-center gap-5">
@@ -817,27 +864,13 @@ const addCourseToSemester = () => {
                                                               editingCourse.semesterId === semester.id && 
                                                               editingCourse.courseIndex === i && 
                                                               editingCourse.field === 'id' ? (
-                                                              <form 
-                                                                onSubmit={(e) => {
-                                                                  e.preventDefault();
-                                                                  saveEditedCourse();
-                                                                }}
-                                                                onClick={(e) => e.stopPropagation()}
-                                                                className="flex"
-                                                              >
-                                                                <Input
-                                                                  ref={inputRef}
-                                                                  className="h-8 border-0 shadow-none bg-transparent p-0 focus-visible:ring-0"
+                                                                <EditableSpan
                                                                   value={editingCourse.value}
-                                                                  onChange={(e) => setEditingCourse({...editingCourse, value: e.target.value})}
-                                                                  onBlur={saveEditedCourse}
-                                                                  onKeyDown={(e) => {
-                                                                    if (e.key === "Escape") {
-                                                                      setEditingCourse(null);
-                                                                    }
-                                                                  }}
+                                                                  onSave={saveEditedCourse}
+                                                                  /* add align / numeric if the table shows that column centered / numeric */
+                                                                  align="center" // ← only where noted
+                                                                  numeric        // ← only for Credits
                                                                 />
-                                                              </form>
                                                             ) : (
                                                               <Editable
                                                                 onEdit={() => startEditingCourse(semester.id, i, "id", course.id)}
@@ -851,27 +884,10 @@ const addCourseToSemester = () => {
                                                               editingCourse.semesterId === semester.id && 
                                                               editingCourse.courseIndex === i && 
                                                               editingCourse.field === 'title' ? (
-                                                              <form 
-                                                                onSubmit={(e) => {
-                                                                  e.preventDefault();
-                                                                  saveEditedCourse();
-                                                                }}
-                                                                onClick={(e) => e.stopPropagation()}
-                                                                className="flex"
-                                                              >
-                                                                <Input
-                                                                  ref={inputRef}
-                                                                  className="h-8 border-0 shadow-none bg-transparent p-0 focus-visible:ring-0"
+                                                                <EditableSpan
                                                                   value={editingCourse.value}
-                                                                  onChange={(e) => setEditingCourse({...editingCourse, value: e.target.value})}
-                                                                  onBlur={saveEditedCourse}
-                                                                  onKeyDown={(e) => {
-                                                                    if (e.key === "Escape") {
-                                                                      setEditingCourse(null);
-                                                                    }
-                                                                  }}
+                                                                  onSave={saveEditedCourse}
                                                                 />
-                                                              </form>
                                                             ) : (
                                                               <Editable
                                                                 onEdit={() => startEditingCourse(semester.id, i, "title", course.title)}
@@ -885,27 +901,13 @@ const addCourseToSemester = () => {
                                                               editingCourse.semesterId === semester.id && 
                                                               editingCourse.courseIndex === i && 
                                                               editingCourse.field === 'grade' ? (
-                                                              <form 
-                                                                onSubmit={(e) => {
-                                                                  e.preventDefault();
-                                                                  saveEditedCourse();
-                                                                }}
-                                                                onClick={(e) => e.stopPropagation()}
-                                                                className="flex justify-center"
-                                                              >
-                                                                <Input
-                                                                  ref={inputRef}
-                                                                  className="h-8 w-20 text-center border-0 shadow-none bg-transparent p-0 focus-visible:ring-0"
+                                                                <EditableSpan
                                                                   value={editingCourse.value}
-                                                                  onChange={(e) => setEditingCourse({...editingCourse, value: e.target.value})}
-                                                                  onBlur={saveEditedCourse}
-                                                                  onKeyDown={(e) => {
-                                                                    if (e.key === "Escape") {
-                                                                      setEditingCourse(null);
-                                                                    }
-                                                                  }}
+                                                                  onSave={saveEditedCourse}
+                                                                  /* add align / numeric if the table shows that column centered / numeric */
+                                                                  align="center" // ← only where noted
+                                                                  numeric        // ← only for Credits
                                                                 />
-                                                              </form>
                                                             ) : (
                                                               <Editable
                                                                 onEdit={() => startEditingCourse(semester.id, i, "grade", course.grade)}
@@ -920,27 +922,13 @@ const addCourseToSemester = () => {
                                                               editingCourse.semesterId === semester.id && 
                                                               editingCourse.courseIndex === i && 
                                                               editingCourse.field === 'credits' ? (
-                                                              <form 
-                                                                onSubmit={(e) => {
-                                                                  e.preventDefault();
-                                                                  saveEditedCourse();
-                                                                }}
-                                                                onClick={(e) => e.stopPropagation()}
-                                                                className="flex justify-center"
-                                                              >
-                                                                <Input
-                                                                  ref={inputRef}
-                                                                  className="h-8 w-20 text-center border-0 shadow-none bg-transparent p-0 focus-visible:ring-0"
+                                                                <EditableSpan
                                                                   value={editingCourse.value}
-                                                                  onChange={(e) => setEditingCourse({...editingCourse, value: e.target.value})}
-                                                                  onBlur={saveEditedCourse}
-                                                                  onKeyDown={(e) => {
-                                                                    if (e.key === "Escape") {
-                                                                      setEditingCourse(null);
-                                                                    }
-                                                                  }}
+                                                                  onSave={saveEditedCourse}
+                                                                  /* add align / numeric if the table shows that column centered / numeric */
+                                                                  align="center" // ← only where noted
+                                                                  numeric        // ← only for Credits
                                                                 />
-                                                              </form>
                                                             ) : (
                                                               <Editable
                                                                 onEdit={() =>
