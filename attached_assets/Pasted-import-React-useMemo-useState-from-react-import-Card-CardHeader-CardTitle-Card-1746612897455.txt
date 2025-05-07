@@ -167,19 +167,3 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
               <Line
                 type="monotone"
                 dataKey={view.key}
-                name={view.label}
-                stroke={view.color}
-                strokeWidth={3}
-                strokeLinecap="round"
-                dot={{ r: 5, fill: view.color, stroke: "white", strokeWidth: 2 }}
-                connectNulls
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </motion.div>
-      </CardContent>
-    </Card>
-  );
-};
-
-export default GpaDashboard;
