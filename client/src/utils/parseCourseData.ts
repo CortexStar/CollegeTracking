@@ -6,6 +6,7 @@ import { calculateGradePoints } from "./grade-utils";
 export interface Course {
   _uid?: string; // unique identifier for each course object
   id: string; // the course code/ID (e.g., "MATH101")
+  classNumber?: string; // Optional: e.g., "11919" from "ECO2023 (11919)"
   title: string; // the course title (e.g., "Introduction to Calculus")
   grade: string; // the letter grade (e.g., "A", "B+", etc.)
   credits: number; // number of credits (e.g., 3, 4, etc.)
@@ -25,13 +26,28 @@ export interface Semester {
 }
 
 /**
- * Parse raw text input into Course objects
+ * Parse raw text input into Course objects (Simple Format)
  * Expected format: Course ID, Title, Grade, Credits (one per line, blank line separates courses)
  * 
  * @param rawText The raw text input to parse
  * @returns Array of Course objects
  */
 export function parseCourseData(rawText: string): Course[] {
+  // First try the enhanced transcript parser
+  const parsedTranscript = parseTranscriptText(rawText);
+  if (parsedTranscript.length > 0) {
+    return parsedTranscript;
+  }
+  
+  // If the enhanced parser didn't find anything, use the simple parser
+  return parseSimpleFormat(rawText);
+}
+
+/**
+ * Simple format parser (original implementation)
+ * Expects: Course ID, Title, Grade, Credits (one per line, blank line separates courses)
+ */
+function parseSimpleFormat(rawText: string): Course[] {
   const lines = rawText.split("\n").map((line) => line.trim());
   const courses: Course[] = [];
   
@@ -121,6 +137,172 @@ export function parseCourseData(rawText: string): Course[] {
     courses.push(course);
   }
   
+  return courses;
+}
+
+/**
+ * A more sophisticated, advanced parsing system for academic transcript data.
+ * 
+ * This parser can intelligently extract course information from complex transcript formats,
+ * identifying course codes, titles, grades, and credits from various layouts.
+ * 
+ * @param rawText The raw transcript text to parse
+ * @returns Array of Course objects
+ */
+export function parseTranscriptText(rawText: string): Course[] {
+  const courses: Course[] = [];
+  const lines = rawText
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0); // Remove empty lines and trim
+
+  if (lines.length === 0) {
+    return [];
+  }
+
+  // --- Regex Patterns ---
+  const courseCodePattern = /^([A-Z]{2,4}\d{3,4}L?)\s*\(?(\d*)\)?$/; // Captures: 1=CourseID, 2=ClassNumber
+  const gradePattern = /^[A-F][+-]?$/i; // Case-insensitive grade (A, B+, c-, etc.)
+  const creditsPattern = /^\d+(\.\d{2})?$/; // Matches X or X.XX (e.g., 3, 4.00)
+
+  // --- State and Markers ---
+  let inCourseSection = false;
+  const courseSectionStartKeywords = ["Course (Class)", "Course Title"];
+  const courseDataHeaderKeywords = ["Grade", "Credit Attempted", "Credit Earned", "Credit for GPA"];
+  const endCourseSectionKeywords = ["Requirement", "Term GPA", "Overall GPA", "UNIVERSITY GPA"];
+
+  let lineIndex = 0;
+
+  // Phase 1: Find the start of the actual course listings
+  while (lineIndex < lines.length && !inCourseSection) {
+    const currentLine = lines[lineIndex];
+    if (courseSectionStartKeywords.some(keyword => currentLine.toUpperCase().includes(keyword.toUpperCase()))) {
+      const currentLineHasHeaders = courseDataHeaderKeywords.every(kw => currentLine.toUpperCase().includes(kw.toUpperCase()));
+      const nextLine = lineIndex + 1 < lines.length ? lines[lineIndex + 1] : "";
+      const nextLineHasHeaders = courseDataHeaderKeywords.every(kw => nextLine.toUpperCase().includes(kw.toUpperCase()));
+
+      if (currentLineHasHeaders) {
+        inCourseSection = true;
+        lineIndex++; // Courses start after this header line
+        break;
+      } else if (nextLineHasHeaders) {
+        inCourseSection = true;
+        lineIndex += 2; // Courses start after the next line (which is the header)
+        break;
+      } else if (currentLine.toUpperCase().includes("COURSE (CLASS)")) { // If it's just the main trigger
+         // Check if the *next* line seems like a header row or if we should look for course codes directly
+         if (nextLineHasHeaders) {
+            inCourseSection = true;
+            lineIndex += 2;
+            break;
+         } else {
+            // Assume courses might start soon, but headers are not immediately clear
+            // Try to find the first course code
+            for (let i = lineIndex + 1; i < lines.length; i++) {
+                if (courseCodePattern.test(lines[i])) {
+                    lineIndex = i;
+                    inCourseSection = true;
+                    break;
+                }
+                if (endCourseSectionKeywords.some(keyword => lines[i].toUpperCase().includes(keyword.toUpperCase()))) break; // Don't search too far
+            }
+            if(inCourseSection) break;
+         }
+      }
+    }
+    lineIndex++;
+  }
+
+  if (!inCourseSection) { // Fallback: if headers are missing or unusual, try to find first course code directly
+    lineIndex = 0;
+    while(lineIndex < lines.length) {
+        if (courseCodePattern.test(lines[lineIndex])) {
+            inCourseSection = true;
+            break;
+        }
+        lineIndex++;
+    }
+    if (!inCourseSection) return []; // No courses found
+  }
+
+  // Phase 2: Extract courses
+  let currentCourse: Partial<Course> = {};
+  let collectedDataForCourse: string[] = []; // To temporarily store lines like grade, credits, etc.
+
+  for (; lineIndex < lines.length; lineIndex++) {
+    const line = lines[lineIndex];
+
+    if (endCourseSectionKeywords.some(keyword => line.toUpperCase().includes(keyword.toUpperCase()))) {
+      if (isValidCourse(currentCourse)) {
+        currentCourse.gradePoints = calculateGradePoints(currentCourse.credits!, currentCourse.grade!);
+        currentCourse._uid = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        courses.push(currentCourse as Course);
+      }
+      currentCourse = {}; // Reset for safety, though we are breaking
+      break; // End of course section
+    }
+
+    const courseCodeMatch = line.match(courseCodePattern);
+    if (courseCodeMatch) {
+      // Finalize previous course
+      if (isValidCourse(currentCourse)) {
+        currentCourse.gradePoints = calculateGradePoints(currentCourse.credits!, currentCourse.grade!);
+        currentCourse._uid = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        courses.push(currentCourse as Course);
+      }
+      // Start a new course
+      currentCourse = {
+        id: courseCodeMatch[1],
+        classNumber: courseCodeMatch[2] || undefined,
+      };
+      collectedDataForCourse = []; // Reset buffer for the new course's details
+      continue;
+    }
+
+    if (currentCourse.id && !currentCourse.title) {
+      currentCourse.title = line;
+      continue;
+    }
+
+    if (currentCourse.id && currentCourse.title) {
+      // We have a course ID and Title, subsequent lines are Grade, Credits, etc.
+      // These are expected in order: Grade, then Credit Attempted (which we use as credits)
+      collectedDataForCourse.push(line);
+
+      // Attempt to parse grade if not already found
+      if (!currentCourse.grade) {
+        for (const dataItem of collectedDataForCourse) {
+          if (gradePattern.test(dataItem)) {
+            currentCourse.grade = dataItem.toUpperCase();
+            // Remove grade from buffer so it's not mistaken for credits later
+            collectedDataForCourse = collectedDataForCourse.filter(item => item.toUpperCase() !== currentCourse.grade);
+            break;
+          }
+        }
+      }
+
+      // Attempt to parse credits if grade is found and credits are not
+      if (currentCourse.grade && typeof currentCourse.credits === 'undefined') {
+        for (const dataItem of collectedDataForCourse) {
+          if (creditsPattern.test(dataItem)) {
+            const creditValue = parseFloat(dataItem);
+            if (!isNaN(creditValue) && creditValue >= 0) {
+              currentCourse.credits = creditValue;
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Add the last processed course if it's complete
+  if (isValidCourse(currentCourse)) {
+    currentCourse.gradePoints = calculateGradePoints(currentCourse.credits!, currentCourse.grade!);
+    currentCourse._uid = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    courses.push(currentCourse as Course);
+  }
+
   return courses;
 }
 
