@@ -12,6 +12,25 @@ const mapYearToLevel = (year: string): "Freshman" | "Sophomore" | "Junior" | "Se
 };
 
 /**
+ * Converts a letter grade to a grade point value
+ * Returns null if the grade cannot be converted (like P/F, W, I)
+ */
+const getGradeValue = (grade: string): number | null => {
+  const gradeMap: Record<string, number> = {
+    'A+': 4.0, 'A': 4.0, 'A-': 3.7,
+    'B+': 3.3, 'B': 3.0, 'B-': 2.7,
+    'C+': 2.3, 'C': 2.0, 'C-': 1.7,
+    'D+': 1.3, 'D': 1.0, 'D-': 0.7,
+    'F': 0.0
+  };
+  
+  // Clean up the input grade and convert to uppercase
+  const cleanGrade = grade.trim().toUpperCase();
+  
+  return gradeMap[cleanGrade] ?? null;
+};
+
+/**
  * Converts the application's semester data to the format expected by the GPA dashboard
  */
 export function formatSemestersForChart(
@@ -27,10 +46,34 @@ export function formatSemestersForChart(
     });
   });
 
-  return semesters.map(semester => ({
-    id: semester.id,
-    term: semester.name,
-    yearLevel: mapYearToLevel(semesterYearMap.get(semester.id) || "Freshman"),
-    gpa: semester.gpa,
-  }));
+  return semesters.map(semester => {
+    // Calculate total credits and grade points for this semester
+    let totalCredits = 0;
+    let totalGradePoints = 0;
+    
+    if (semester.courses) {
+      semester.courses.forEach(course => {
+        const credits = course.credits ? parseFloat(course.credits.toString()) : 0;
+        
+        if (credits > 0 && course.grade && typeof course.grade === 'string') {
+          totalCredits += credits;
+          
+          // Convert letter grade to grade points
+          const gradeValue = getGradeValue(course.grade);
+          if (gradeValue !== null) {
+            totalGradePoints += credits * gradeValue;
+          }
+        }
+      });
+    }
+    
+    return {
+      id: semester.id,
+      term: semester.name,
+      yearLevel: mapYearToLevel(semesterYearMap.get(semester.id) || "Freshman"),
+      gpa: semester.gpa,
+      credits: totalCredits > 0 ? totalCredits : undefined,
+      gradePoints: totalGradePoints > 0 ? totalGradePoints : undefined,
+    };
+  });
 }
