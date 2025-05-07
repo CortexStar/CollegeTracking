@@ -78,7 +78,7 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
       <CardHeader className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 p-6">
         <div>
           <h2 className="sr-only">GPA Overview</h2>
-          <CardTitle as="h2" className="text-3xl font-semibold tracking-tight">GPA Overview</CardTitle>
+          <CardTitle className="text-3xl font-semibold tracking-tight">GPA Overview</CardTitle>
           <p className="text-muted-foreground text-sm">
             {mode === "history" ? "Historical performance by semester" : "Projected GPA confidence bands"}
           </p>
@@ -108,12 +108,6 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
         >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 20, right: 36, left: 12, bottom: 0 }}>
-              <Defs>
-                <LinearGradient id="range" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={HIGH} stopOpacity={0.4} />
-                  <stop offset="100%" stopColor={HIGH} stopOpacity={0.1} />
-                </LinearGradient>
-              </Defs>
 
               <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.1} />
               <XAxis
@@ -169,7 +163,7 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
                     dataKey="high"
                     fillOpacity={0.08}
                     stroke="transparent"
-                    fill="url(#range)"
+                    fill={HIGH}
                     activeDot={false}
                     connectNulls
                   />
