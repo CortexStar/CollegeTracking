@@ -49,7 +49,7 @@ export const Editable: React.FC<EditableProps> = ({
 
   return (
     <span
-      className={`${alignmentClass} block w-full h-full px-1 py-0.5 cursor-text rounded-sm hover:bg-slate-200 dark:hover:bg-slate-700 ${isEmpty ? "text-muted-foreground italic" : ""}`}
+      className={`${alignmentClass} ${isEmpty ? "text-muted-foreground italic" : ""}`}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
       aria-label={ariaLabel}
@@ -72,9 +72,7 @@ export const EditableSpan: React.FC<EditableSpanProps> = ({
   numeric = false,
   "aria-label": ariaLabel,
 }) => {
-  // Ensure value is properly handled for numeric fields
-  const initialValue = numeric && value === "0" ? "" : value;
-  const [editedValue, setEditedValue] = useState(initialValue);
+  const [editedValue, setEditedValue] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Focus the input when the component mounts
@@ -100,10 +98,11 @@ export const EditableSpan: React.FC<EditableSpanProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (numeric) {
-      // For numeric inputs, handle empty strings or valid numbers
+      // Allow only numeric input (including decimal)
       const value = e.target.value;
-      // For type="number", the browser ensures numeric values
-      setEditedValue(value);
+      if (value === "" || /^[0-9]*\.?[0-9]*$/.test(value)) {
+        setEditedValue(value);
+      }
     } else {
       setEditedValue(e.target.value);
     }
@@ -117,13 +116,13 @@ export const EditableSpan: React.FC<EditableSpanProps> = ({
   return (
     <input
       ref={inputRef}
-      type={numeric ? "number" : "text"}
+      type="text"
       value={editedValue}
       onChange={handleChange}
       onKeyDown={handleKeyDown}
       onBlur={handleBlur}
       onClick={(e) => e.stopPropagation()}
-      className={`${alignmentClass} w-full h-full px-1 py-0.5 text-sm bg-transparent border-blue-500 ring-1 ring-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-sm ${numeric ? '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none' : ''}`}
+      className={`${alignmentClass} h-8 py-0 px-0 w-full border-none bg-transparent focus:ring-0 focus:outline-none`}
       aria-label={ariaLabel}
     />
   );
