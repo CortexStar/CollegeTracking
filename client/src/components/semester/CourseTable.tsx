@@ -255,6 +255,22 @@ const CourseTable: React.FC<CourseTableProps> = ({
             </ContextMenuContent>
           </ContextMenu>
         ))}
+        
+        {/* Totals Row */}
+        {courses.length > 0 && (
+          <TableRow className="font-medium border-t">
+            <TableCell>Total:</TableCell>
+            <TableCell></TableCell>
+            <TableCell></TableCell>
+            <TableCell className="text-center">
+              {courses.reduce((total, course) => total + course.credits, 0)}
+            </TableCell>
+            <TableCell className="text-right">
+              {courses.reduce((total, course) => total + course.gradePoints, 0).toFixed(2)}
+            </TableCell>
+            <TableCell></TableCell>
+          </TableRow>
+        )}
       </TableBody>
     </Table>
   );
