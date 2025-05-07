@@ -73,7 +73,7 @@ const CourseTable: React.FC<CourseTableProps> = ({
   if (courses.length === 0) {
     return (
       <div className="p-4 text-center">
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground text-xs">
           No courses added yet. Right-click on the semester to add courses.
         </p>
       </div>
@@ -81,14 +81,14 @@ const CourseTable: React.FC<CourseTableProps> = ({
   }
 
   return (
-    <Table className="overflow-hidden rounded-md border shadow-sm">
+    <Table className="overflow-hidden rounded-md border shadow-sm text-xs">
       <TableHeader className="bg-muted/50">
         <TableRow>
-          <TableHead className="font-medium">Course Code</TableHead>
-          <TableHead className="font-medium">Course Title</TableHead>
-          <TableHead className="text-center font-medium">Grade</TableHead>
-          <TableHead className="text-center font-medium">Credits</TableHead>
-          <TableHead className="text-right font-medium">Grade Points</TableHead>
+          <TableHead className="font-medium text-xs">Course Code</TableHead>
+          <TableHead className="font-medium text-xs">Course Title</TableHead>
+          <TableHead className="text-center font-medium text-xs">Grade</TableHead>
+          <TableHead className="text-center font-medium text-xs">Credits</TableHead>
+          <TableHead className="text-right font-medium text-xs">Grade Points</TableHead>
           <TableHead className="w-[50px]"></TableHead>
         </TableRow>
       </TableHeader>
