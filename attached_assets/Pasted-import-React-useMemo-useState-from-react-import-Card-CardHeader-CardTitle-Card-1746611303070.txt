@@ -20,7 +20,7 @@ import {
 import { motion } from "framer-motion";
 
 /**
- * GPA DASHBOARD – v8 (forecast kicks in *at* last observed)
+ * GPA DASHBOARD – v7 (solid purple forecast, continuous)
  */
 
 export interface Semester {
@@ -36,58 +36,53 @@ interface Props {
   semesters: Semester[];
 }
 
-const GREEN = "#10b981";
-const PURPLE = "#8b5cf6";
+const GREEN = "#10b981"; // history & overall
+const PURPLE = "#8b5cf6"; // forecast line
 const round2 = (v: number | null) => (v == null ? null : Math.round(v * 100) / 100);
 
-const ALPHA = 0.6,
-  BETA = 0.05,
-  PHI = 0.7;
+// Holt‑damped (extra gentle)
+const ALPHA = 0.6;
+const BETA = 0.05;
+const PHI = 0.7;
 
 const GpaDashboard: React.FC<Props> = ({ semesters }) => {
   const [mode, setMode] = useState<"history" | "overall" | "forecast">("history");
 
-  /* cumulative */
+  /* cumulative GPA */
   const cumulative = useMemo(() => {
-    let cr = 0,
-      gp = 0;
+    let cred = 0,
+      pts = 0;
     return semesters.map((s) => {
       if (s.gpa != null) {
         if (s.credits != null && s.gradePoints != null) {
-          cr += s.credits;
-          gp += s.gradePoints;
+          cred += s.credits;
+          pts += s.gradePoints;
         } else {
-          cr += 1;
-          gp += s.gpa;
+          cred += 1;
+          pts += s.gpa;
         }
       }
-      return { ...s, cumulative: round2(cr ? gp / cr : null) } as any;
+      return { ...s, cumulative: round2(cred ? pts / cred : null) } as any;
     });
   }, [semesters]);
 
-  /* forecast series */
+  /* Forecast (Holt‑damped) starting from last real point */
   const forecast = useMemo(() => {
-    const obsIdx = cumulative.reduce((acc, d, i) => (d.cumulative != null ? i : acc), -1);
-    if (obsIdx === -1) return cumulative;
+    const obs = cumulative.filter((d) => d.cumulative != null);
+    if (!obs.length) return cumulative;
 
-    // Holt params from observed points
-    let L = cumulative[0].cumulative as number;
+    let L = obs[0].cumulative as number;
     let T = 0;
-    for (let i = 1; i <= obsIdx; i++) {
-      const y = cumulative[i].cumulative as number;
-      if (y == null) break;
+    for (let i = 1; i < obs.length; i++) {
+      const y = obs[i].cumulative as number;
       const prevL = L;
       L = ALPHA * y + (1 - ALPHA) * (prevL + PHI * T);
       T = BETA * (L - prevL) + (1 - BETA) * PHI * T;
     }
 
-    // copy data; proj only from last observed onwards
-    const series: any[] = cumulative.map((d, i) => ({ ...d, proj: i >= obsIdx ? d.cumulative : null }));
+    // series includes observed cumulative values as project line baseline
+    const series: any[] = cumulative.map((d) => ({ ...d, proj: d.cumulative }));
 
-    // seed last observed value into proj so line continues from that point
-    series[obsIdx].proj = cumulative[obsIdx].cumulative;
-
-    /* future semesters */
     const levels = ["Freshman", "Sophomore", "Junior", "Senior"] as const;
     let last = semesters[semesters.length - 1];
     let [season, yStr] = last.term.split(" ") as ["Fall" | "Spring", string];
