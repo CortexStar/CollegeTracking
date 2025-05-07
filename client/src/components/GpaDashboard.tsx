@@ -279,11 +279,11 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
                     type="monotone"
                     dataKey="avg"
                     name="Avg Forecast"
-                    stroke={AVG}
-                    strokeWidth={2}
+                    stroke={GRADIENT_FROM}
+                    strokeWidth={3}
                     strokeLinecap="round"
-                    strokeDasharray="4 4"
-                    dot={false}
+                    dot={{ r: 6, stroke: "white", strokeWidth: 2, fill: GRADIENT_FROM }}
+                    activeDot={{ r: 7 }}
                     connectNulls
                   />
                   <Line
@@ -291,9 +291,9 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
                     dataKey="high"
                     name="High Possibility"
                     stroke={HIGH}
-                    strokeWidth={1.5}
+                    strokeWidth={2}
                     strokeLinecap="round"
-                    dot={false}
+                    dot={{ r: 4, fill: HIGH }}
                     connectNulls
                   />
                   <Line
@@ -303,7 +303,7 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
                     stroke={"#475569"} 
                     strokeWidth={2}
                     strokeLinecap="round"
-                    dot={false}
+                    dot={{ r: 4, fill: "#475569" }}
                     connectNulls
                   />
                 </>

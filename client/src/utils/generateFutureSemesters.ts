@@ -35,34 +35,62 @@ export function generateFutureSemesters(existing: Semester[]): Semester[] {
   );
 
   const last = semesters[semesters.length - 1];
-  const [lastSeason, lastYear] = parseSemesterName(last.name);
-  let seasonIdx = ORDER.indexOf(lastSeason as any);
-  if (seasonIdx === -1) seasonIdx = 0; // Default to Fall if not found
+  const lastTermText = last.name;
+  const match = lastTermText.match(/\b(20\d{2})\b/);
   
-  // Default to Freshman if can't determine
-  let levelIdx = 0;
-  let year = lastYear;
-
-  while (levelIdx < LEVELS.length) {
-    // advance to next term
-    seasonIdx = (seasonIdx + 1) % 2;
-    if (seasonIdx === 0) year += 1; // wrapped from Spring -> Fall
-
-    if (seasonIdx === 0 && levelIdx < LEVELS.length - 1) levelIdx++; // promote after Spring
-    
-    const yearLevel = LEVELS[levelIdx];
+  // Determine starting season and year
+  let season = "Spring";
+  let year = match ? parseInt(match[0]) : new Date().getFullYear();
+  
+  // Important fix: If last term was Fall, advance to next year's Spring
+  if (lastTermText.includes("Fall")) {
+    season = "Spring";
+    year = match ? parseInt(match[0]) + 1 : new Date().getFullYear() + 1;
+  } else if (lastTermText.includes("Spring")) {
+    season = "Fall";
+    year = match ? parseInt(match[0]) : new Date().getFullYear();
+  }
+  
+  // Determine starting year level
+  let levelIndex = 0;
+  // Simple heuristic to estimate current year level from last term name
+  const levelMatch = lastTermText.match(/(Freshman|Sophomore|Junior|Senior)/i);
+  if (levelMatch) {
+    const foundLevel = levelMatch[1].toLowerCase();
+    if (foundLevel.includes("fresh")) levelIndex = 0;
+    else if (foundLevel.includes("soph")) levelIndex = 1;
+    else if (foundLevel.includes("jun")) levelIndex = 2;
+    else if (foundLevel.includes("sen")) levelIndex = 3;
+  }
+  
+  let yearLevel = LEVELS[levelIndex];
+  
+  // Generate future semesters
+  while (true) {
+    // Create the next semester
     const next: Semester = {
-      id: `${ORDER[seasonIdx]}${year}`,
-      name: `${ORDER[seasonIdx]} ${year}`,
+      id: `${season}${year}`,
+      name: `${season} ${year}`,
       courses: [],
       totalCredits: 0,
       totalGradePoints: 0,
       gpa: 0,
     };
-
-    // stop once we've added Senior Spring
+    
+    // Add it to the list
     semesters.push(next);
-    if (yearLevel === "Senior" && ORDER[seasonIdx] === "Spring") break;
+    
+    // Stop once we've reached Senior Spring
+    if (yearLevel === "Senior" && season === "Spring") break;
+    
+    // Advance term
+    const nextIsSpring = season === "Fall";
+    season = nextIsSpring ? "Spring" : "Fall";
+    if (!nextIsSpring) year += 1; // Fall→Spring keeps year, Spring→Fall adds one
+    
+    // Promote class year after Spring term
+    if (season === "Fall" && levelIndex < 3) levelIndex++;
+    yearLevel = LEVELS[levelIndex];
   }
 
   return semesters;
