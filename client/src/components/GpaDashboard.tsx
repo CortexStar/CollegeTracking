@@ -20,15 +20,15 @@ import {
 import { motion } from "framer-motion";
 
 /**
- * GPA DASHBOARD – v4 (green theme)
+ * GPA DASHBOARD – v5 (Holt‑damped forecast, green)
  * ────────────────────────────────────────────────────────────────────────────
  * Views:
  *   • History    – term GPA
  *   • Overall    – cumulative GPA
- *   • Forecast   – linear‑regression projection of cumulative GPA
+ *   • Forecast   – Holt's damped trend on cumulative GPA
  *
- *  ▸ All GPAs rounded to two decimals.
- *  ▸ Lines now green (#10b981). Forecast uses dotted stroke.
+ *  ▸ All GPAs rounded to 2 decimals.
+ *  ▸ Solid green line for observed data; dotted green for forecast starting *after* last term.
  */
 
 export interface Semester {
@@ -47,14 +47,19 @@ interface Props {
 const GREEN = "#10b981"; // emerald‑500
 const round2 = (v: number | null) => (v == null ? null : Math.round(v * 100) / 100);
 
+// Holt parameters – tweak if desired
+const ALPHA = 0.5;   // level smoothing
+const BETA = 0.3;    // trend smoothing
+const PHI = 0.9;     // damping (0<φ≤1)
+
 /** ───────────────────────────────────────────────────────────────────────── */
 const GpaDashboard: React.FC<Props> = ({ semesters }) => {
   const [mode, setMode] = useState<"history" | "overall" | "forecast">("history");
 
-  /** Build cumulative GPA (weighted if credits provided) */
-  const cumulativeData = useMemo(() => {
-    let cred = 0;
-    let pts = 0;
+  /** Build cumulative GPA (weighted) */
+  const cumulative = useMemo(() => {
+    let cred = 0,
+      pts = 0;
     return semesters.map((s) => {
       if (s.gpa != null) {
         if (s.credits != null && s.gradePoints != null) {
@@ -65,32 +70,30 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
           pts += s.gpa;
         }
       }
-      const cumulative = cred ? pts / cred : null;
-      return { ...s, cumulative: round2(cumulative) } as any;
+      return { ...s, cumulative: round2(cred ? pts / cred : null) } as any;
     });
   }, [semesters]);
 
-  /** -------- Linear regression on cumulative GPA -------- */
-  const forecastData = useMemo(() => {
-    if (!cumulativeData.length) return [] as any[];
-
-    // take completed rows
-    const observed = cumulativeData.filter((d) => d.cumulative != null);
+  /** Holt‑Winters damped trend forecast on cumulative GPA */
+  const forecast = useMemo(() => {
+    if (!cumulative.length) return [] as any[];
+    const observed = cumulative.filter((d) => d.cumulative != null);
     const n = observed.length;
-    if (n < 2) return cumulativeData; // not enough data
+    if (n === 0) return cumulative;
 
-    const xs = observed.map((_, i) => i);
-    const ys = observed.map((d) => d.cumulative as number);
-    const xBar = xs.reduce((a, b) => a + b, 0) / n;
-    const yBar = ys.reduce((a, b) => a + b, 0) / n;
-    const slope = xs.reduce((acc, x, i) => acc + (x - xBar) * (ys[i] - yBar), 0) /
-                  xs.reduce((acc, x) => acc + Math.pow(x - xBar, 2), 0);
-    const intercept = yBar - slope * xBar;
+    let L = observed[0].cumulative as number;
+    let T = 0;
+    for (let i = 1; i < n; i++) {
+      const y = observed[i].cumulative as number;
+      const prevL = L;
+      L = ALPHA * y + (1 - ALPHA) * (prevL + PHI * T);
+      T = BETA * (L - prevL) + (1 - BETA) * PHI * T;
+    }
 
-    // copy existing
-    const proj: any[] = cumulativeData.map((d, i) => ({ ...d, proj: d.cumulative }));
+    // copy dataset & seed proj up to last observed
+    const series: any[] = cumulative.map((d) => ({ ...d, proj: d.cumulative }));
 
-    // generate future semesters up to Senior Spring (max 6)
+    // generate future terms until Senior Spring (max 6)
     const levelOrder = ["Freshman", "Sophomore", "Junior", "Senior"] as const;
     let last = semesters[semesters.length - 1];
     let [season, yStr] = last.term.split(" ") as ["Fall" | "Spring", string];
@@ -105,19 +108,21 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
     if (season === "Fall" && levelIdx < 3) levelIdx++;
 
     const horizon = 6;
-    for (let k = 1; k <= horizon; k++) {
-      const termIdx = observed.length - 1 + k; // x for regression
-      const yPred = round2(intercept + slope * termIdx);
-      proj.push({
+    for (let h = 1; h <= horizon; h++) {
+      // damped forecast formula
+      const phi_h = (1 - Math.pow(PHI, h)) / (1 - PHI);
+      const yHat = round2(Math.min(4, Math.max(0, L + PHI * phi_h * T)));
+
+      series.push({
         id: `fcast-${season}-${year}`,
         term: `${season} ${year}`,
         yearLevel: levelOrder[levelIdx],
         gpa: null,
         cumulative: null,
-        proj: yPred,
+        proj: yHat,
       });
 
-      // advance term
+      // advance term chronology
       if (season === "Fall") {
         season = "Spring";
       } else {
@@ -126,20 +131,20 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
         if (levelIdx < 3) levelIdx++;
       }
     }
-    return proj;
-  }, [cumulativeData, semesters]);
+    return series;
+  }, [cumulative, semesters]);
 
-  /** Pick dataset for chart */
-  const { data, yKey, label } = useMemo(() => {
+  /** Select view */
+  const { data, key, label, dashed } = useMemo(() => {
     switch (mode) {
       case "history":
-        return { data: semesters.map((s) => ({ ...s, gpa: round2(s.gpa) })), yKey: "gpa", label: "GPA" };
+        return { data: semesters.map((s) => ({ ...s, gpa: round2(s.gpa) })), key: "gpa", label: "GPA", dashed: false };
       case "overall":
-        return { data: cumulativeData, yKey: "cumulative", label: "Cumulative GPA" };
+        return { data: cumulative, key: "cumulative", label: "Cumulative GPA", dashed: false };
       case "forecast":
-        return { data: forecastData, yKey: "proj", label: "Projected GPA" };
+        return { data: forecast, key: "proj", label: "Projected GPA", dashed: true };
     }
-  }, [mode, semesters, cumulativeData, forecastData]);
+  }, [mode, semesters, cumulative, forecast]);
 
   /** -------------------------------------------------------------------- */
   return (
@@ -150,7 +155,7 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
           <p className="text-muted-foreground text-sm">
             {mode === "history" && "Semester GPA"}
             {mode === "overall" && "Cumulative GPA"}
-            {mode === "forecast" && "Projected cumulative GPA (linear)"}
+            {mode === "forecast" && "Projected cumulative GPA (Holt‑damped)"}
           </p>
         </div>
         <ToggleGroup type="single" value={mode} onValueChange={(v) => v && setMode(v as any)} className="border border-slate-300 dark:border-slate-700 rounded-full overflow-hidden backdrop-blur-sm">
@@ -165,28 +170,42 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 20, right: 36, left: 12, bottom: 40 }}>
               <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.1} />
-              <XAxis dataKey="term" interval="preserveStartEnd" tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
-              <YAxis domain={[0, 4]} tickFormatter={(v) => v.toFixed(2)} tickCount={5} tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
+              <XAxis dataKey="term" tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} interval="preserveStartEnd" />
+              <YAxis domain={[0, 4]} tickFormatter={(v) => v.toFixed(2)} tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
               <Tooltip formatter={(v: any) => (v != null ? (v as number).toFixed(2) : "–")} labelFormatter={(t) => `Term: ${t}`} contentStyle={{ backdropFilter: "blur(6px)", background: "rgba(255,255,255,0.7)", borderRadius: 12, border: "none" }} />
               <Legend verticalAlign="top" height={36} wrapperStyle={{ paddingBottom: 16 }} />
 
-              {(["Freshman", "Sophomore", "Junior", "Senior"] as const).map((level) => {
-                const idx = data.map((s, i) => (s.yearLevel === level ? i : -1)).filter((i) => i !== -1);
+              {/* Year shading */}
+              {(["Freshman", "Sophomore", "Junior", "Senior"] as const).map((lvl) => {
+                const idx = data.map((d, i) => (d.yearLevel === lvl ? i : -1)).filter((i) => i !== -1);
                 if (!idx.length) return null;
-                const [start, end] = [Math.min(...idx) - 0.5, Math.max(...idx) + 0.5];
-                return <ReferenceArea key={level} x1={start} x2={end} strokeOpacity={0} fillOpacity={0.04} />;
+                return <ReferenceArea key={lvl} x1={Math.min(...idx) - 0.5} x2={Math.max(...idx) + 0.5} strokeOpacity={0} fillOpacity={0.04} />;
               })}
 
+              {/* Solid line for observed part (in forecast mode show gap) */}
+              {mode === "forecast" && (
+                <Line
+                  type="monotone"
+                  dataKey="cumulative"
+                  stroke={GREEN}
+                  strokeWidth={3}
+                  dot={{ r: 5, fill: GREEN, stroke: "white", strokeWidth: 2 }}
+                  activeDot={{ r: 6 }}
+                  isAnimationActive={false}
+                />
+              )}
+
+              {/* Main line */}
               <Line
                 type="monotone"
-                dataKey={yKey}
+                dataKey={key}
                 name={label}
                 stroke={GREEN}
                 strokeWidth={3}
+                strokeDasharray={dashed ? "6 6" : undefined}
                 strokeLinecap="round"
-                strokeDasharray={mode === "forecast" ? "4 4" : undefined}
-                dot={{ r: 6, stroke: "white", strokeWidth: 2, fill: GREEN }}
-                activeDot={{ r: 7 }}
+                dot={{ r: dashed ? 4 : 6, fill: GREEN, stroke: "white", strokeWidth: 2 }}
+                activeDot={{ r: dashed ? 5 : 7 }}
                 connectNulls
               />
             </LineChart>
