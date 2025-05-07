@@ -117,13 +117,13 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
       // Create the next semester
       const nextId = `forecast-${season}-${year}`;
       const nextTerm = `${season} ${year}`;
-      yearLevel = levelOrder[levelIndex]; 
+      const nextYearLevel = levelOrder[levelIndex] as "Freshman" | "Sophomore" | "Junior" | "Senior";
       
       // Add to results
       result.push({
         id: nextId,
         term: nextTerm,
-        yearLevel,
+        yearLevel: nextYearLevel,
         gpa: null,
         avg: lastReal,
         high: Math.min(4, lastReal + 0.3),
@@ -142,8 +142,8 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
         }
       }
       
-      // Update year level
-      yearLevel = levelOrder[levelIndex];
+      // Update year level for the loop condition
+      yearLevel = levelOrder[levelIndex] as "Freshman" | "Sophomore" | "Junior" | "Senior";
       
       // Safety check to avoid infinite loops
       if (result.length > 20) break;
