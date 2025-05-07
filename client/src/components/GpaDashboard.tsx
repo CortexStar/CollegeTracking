@@ -165,7 +165,7 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
   const chartData = mode === "history" ? semesters : withForecast;
 
   return (
-    <Card className="w-full max-w-4xl mx-auto backdrop-blur-md bg-white/60 dark:bg-slate-900/60 border border-white/30 dark:border-slate-700/40 shadow-xl rounded-2xl pb-4">
+    <Card className="w-full max-w-4xl mx-auto backdrop-blur-md bg-white/60 dark:bg-slate-900/60 border border-white/30 dark:border-slate-700/40 shadow-xl rounded-2xl pb-8 mb-12">
       <CardHeader className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 p-6">
         <div>
           <h2 className="sr-only">GPA Overview</h2>
@@ -195,10 +195,10 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-          className="w-full h-[460px]"
+          className="w-full h-[480px]"
         >
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 20, right: 36, left: 12, bottom: 24 }}>
+            <LineChart data={chartData} margin={{ top: 20, right: 36, left: 12, bottom: 36 }}>
 
               <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.1} />
               <XAxis
