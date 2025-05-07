@@ -12,6 +12,8 @@ import { calculateSemesterTotals, calculateGradePoints } from "@/utils/grade-uti
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 import SemesterDropdown from "@/components/semester/SemesterDropdown";
 import OverviewStats from "@/components/semester/OverviewStats";
+import GpaDashboard from "@/components/GpaDashboard";
+import { formatSemestersForChart } from "@/utils/format-chart-data";
 import {
   Dialog,
   DialogContent,
@@ -390,7 +392,7 @@ export default function GradesPage() {
         <Collapsible
           open={isGradeScaleOpen}
           onOpenChange={setIsGradeScaleOpen}
-          className="mt-6 mb-2 bg-card rounded-lg p-2 border-none max-w-md mx-auto"
+          className="mt-6 mb-6 bg-card rounded-lg p-2 border-none max-w-md mx-auto"
         >
           <CollapsibleTrigger className="w-full py-1 flex justify-center items-center text-sm text-muted-foreground">
             {isGradeScaleOpen ? "Hide Grade Scale" : "Show Grade Scale"}
@@ -420,6 +422,15 @@ export default function GradesPage() {
             </div>
           </CollapsibleContent>
         </Collapsible>
+        
+        {/* GPA Visualization Dashboard */}
+        {semesters.length > 0 && (
+          <div className="mt-12 mb-8">
+            <GpaDashboard
+              semesters={formatSemestersForChart(semesters, organizedSections)}
+            />
+          </div>
+        )}
       </div>
 
       {/* Add Semester Dialog */}
