@@ -328,7 +328,7 @@ export default function GradesPage() {
   }, []);
 
   return (
-    <div className="container py-6 max-w-6xl mx-auto">
+    <div className="container py-6 pb-12 max-w-6xl mx-auto">
       <h1 className="text-3xl font-bold mb-6 pb-2 border-b-2 border-black w-full">Grades Summary</h1>
       
       {/* Overall Stats */}
@@ -426,7 +426,7 @@ export default function GradesPage() {
         
         {/* GPA Visualization Dashboard */}
         {semesters.length > 0 && (
-          <div className="mt-12 mb-8 md:h-[500px]">
+          <div className="mt-12 mb-16">
             <GpaDashboard
               semesters={formatSemestersForChart(semesters, organizedSections)}
             />
