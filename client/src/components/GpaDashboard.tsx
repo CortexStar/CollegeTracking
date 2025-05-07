@@ -62,22 +62,15 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
 
   const lastReal = completed[completed.length - 1]?.gpa ?? 0;
 
+  // Generate future semesters for the forecast view
   const withForecast = useMemo(() => {
-    return semesters.map((s, idx) => {
+    // First, include all existing semesters with their completed data
+    const result = semesters.map(s => {
       if (s.gpa !== null) {
         // completed semester - keep history line
         return { ...s, avg: null, high: null, low: null };
       }
-      // first future point - branch from lastReal
-      if (idx === completed.length) {
-        return {
-          ...s,
-          avg: lastReal,
-          high: Math.min(4, lastReal + 0.3),
-          low: Math.max(0, lastReal - 0.3),
-        };
-      }
-      // further future - flatten toward avg
+      // pending semester
       return {
         ...s,
         avg: lastReal,
@@ -85,6 +78,78 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
         low: Math.max(0, lastReal - 0.3),
       };
     });
+
+    // If there are no completed semesters, just return the empty result
+    if (!completed.length) return result;
+
+    // Get the last semester to determine where to start generating future ones
+    const lastSemester = semesters[semesters.length - 1];
+    
+    // Extract the term info to determine what comes next
+    const lastTermText = lastSemester.term;
+    let season = "Fall";
+    let year = new Date().getFullYear();
+    let yearLevel = lastSemester.yearLevel;
+    
+    // Try to extract season and year from the last term
+    if (lastTermText.includes("Fall")) {
+      season = "Spring";
+      const match = lastTermText.match(/\d{4}/);
+      if (match) year = parseInt(match[0]);
+    } else if (lastTermText.includes("Spring")) {
+      season = "Fall";
+      const match = lastTermText.match(/\d{4}/);
+      if (match) year = parseInt(match[0]);
+    }
+    
+    // Get the index in the academic progression
+    const levelOrder = ["Freshman", "Sophomore", "Junior", "Senior"] as const;
+    let levelIndex = levelOrder.indexOf(yearLevel as any);
+    if (levelIndex === -1) levelIndex = 0;
+    
+    // After Spring semester, advance to next year level
+    if (season === "Fall" && levelIndex < levelOrder.length - 1) {
+      levelIndex++;
+    }
+
+    // Generate future semesters until we reach Senior Spring
+    while (!(yearLevel === "Senior" && season === "Spring")) {
+      // Create the next semester
+      const nextId = `forecast-${season}-${year}`;
+      const nextTerm = `${season} ${year}`;
+      yearLevel = levelOrder[levelIndex]; 
+      
+      // Add to results
+      result.push({
+        id: nextId,
+        term: nextTerm,
+        yearLevel,
+        gpa: null,
+        avg: lastReal,
+        high: Math.min(4, lastReal + 0.3),
+        low: Math.max(0, lastReal - 0.3),
+      });
+      
+      // Advance to next term
+      if (season === "Fall") {
+        season = "Spring";
+      } else {
+        season = "Fall";
+        year++;
+        // After Spring semester, advance to next year level
+        if (levelIndex < levelOrder.length - 1) {
+          levelIndex++;
+        }
+      }
+      
+      // Update year level
+      yearLevel = levelOrder[levelIndex];
+      
+      // Safety check to avoid infinite loops
+      if (result.length > 20) break;
+    }
+    
+    return result;
   }, [semesters, completed, lastReal]);
 
   const chartData = mode === "history" ? semesters : withForecast;
@@ -143,7 +208,9 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
 
               {/* Year shading */}
               {(["Freshman", "Sophomore", "Junior", "Senior"] as const).map((level) => {
-                const indices = semesters
+                // Use the current mode's data for shading
+                const currentData = mode === "history" ? semesters : withForecast;
+                const indices = currentData
                   .map((s, i) => (s.yearLevel === level ? i : -1))
                   .filter((i) => i !== -1);
                 if (!indices.length) return null;
