@@ -14,6 +14,7 @@ import SemesterDropdown from "@/components/semester/SemesterDropdown";
 import OverviewStats from "@/components/semester/OverviewStats";
 import GpaDashboard from "@/components/GpaDashboard";
 import { formatSemestersForChart } from "@/utils/format-chart-data";
+import { generateFutureSemesters } from "@/utils/generateFutureSemesters";
 import {
   Dialog,
   DialogContent,

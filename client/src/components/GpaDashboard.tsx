@@ -60,16 +60,32 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
     return completed.reduce((acc, s) => acc + (s.gpa || 0), 0) / completed.length;
   }, [completed]);
 
+  const lastReal = completed[completed.length - 1]?.gpa ?? 0;
+
   const withForecast = useMemo(() => {
-    return semesters.map((s) => {
-      if (s.gpa !== null)
-        // anchor completed points so Recharts sees a continuous line
-        return { ...s, avg: s.gpa, high: s.gpa, low: s.gpa };
-      const high = Math.min(4, avgGpa + 0.25);
-      const low = Math.max(0, avgGpa - 0.25);
-      return { ...s, avg: avgGpa, high, low } as any;
+    return semesters.map((s, idx) => {
+      if (s.gpa !== null) {
+        // completed semester - keep history line
+        return { ...s, avg: null, high: null, low: null };
+      }
+      // first future point - branch from lastReal
+      if (idx === completed.length) {
+        return {
+          ...s,
+          avg: lastReal,
+          high: Math.min(4, lastReal + 0.3),
+          low: Math.max(0, lastReal - 0.3),
+        };
+      }
+      // further future - flatten toward avg
+      return {
+        ...s,
+        avg: lastReal,
+        high: Math.min(4, lastReal + 0.3),
+        low: Math.max(0, lastReal - 0.3),
+      };
     });
-  }, [semesters, avgGpa]);
+  }, [semesters, completed, lastReal]);
 
   const chartData = mode === "history" ? semesters : withForecast;
 
@@ -152,6 +168,7 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
                   name="GPA"
                   stroke={GRADIENT_FROM}
                   strokeWidth={3}
+                  strokeLinecap="round"
                   dot={{ r: 6, stroke: "white", strokeWidth: 2, fill: GRADIENT_FROM }}
                   isAnimationActive={false}
                 />
@@ -161,7 +178,7 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
                   <Area
                     type="monotone"
                     dataKey="high"
-                    fillOpacity={0.08}
+                    fillOpacity={0.05}
                     stroke="transparent"
                     fill={HIGH}
                     activeDot={false}
@@ -182,6 +199,7 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
                     name="Avg Forecast"
                     stroke={AVG}
                     strokeWidth={2}
+                    strokeLinecap="round"
                     strokeDasharray="4 4"
                     dot={false}
                     connectNulls
@@ -192,6 +210,7 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
                     name="High Possibility"
                     stroke={HIGH}
                     strokeWidth={1.5}
+                    strokeLinecap="round"
                     dot={false}
                     connectNulls
                   />
@@ -201,6 +220,7 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
                     name="Low Possibility"
                     stroke={"#475569"} 
                     strokeWidth={2}
+                    strokeLinecap="round"
                     dot={false}
                     connectNulls
                   />
