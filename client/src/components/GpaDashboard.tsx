@@ -19,6 +19,7 @@ import {
   Legend,
   ReferenceArea,
   CartesianGrid,
+  Area,
 } from "recharts";
 import { motion } from "framer-motion";
 
@@ -62,7 +63,8 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
   const withForecast = useMemo(() => {
     return semesters.map((s) => {
       if (s.gpa !== null)
-        return { ...s, avg: null, high: null, low: null } as any;
+        // anchor completed points so Recharts sees a continuous line
+        return { ...s, avg: s.gpa, high: s.gpa, low: s.gpa };
       const high = Math.min(4, avgGpa + 0.25);
       const low = Math.max(0, avgGpa - 0.25);
       return { ...s, avg: avgGpa, high, low } as any;
@@ -75,7 +77,8 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
     <Card className="w-full max-w-4xl mx-auto backdrop-blur-md bg-white/60 dark:bg-slate-900/60 border border-white/30 dark:border-slate-700/40 shadow-xl rounded-2xl">
       <CardHeader className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 p-6">
         <div>
-          <CardTitle className="text-3xl font-semibold tracking-tight">GPA Overview</CardTitle>
+          <h2 className="sr-only">GPA Overview</h2>
+          <CardTitle as="h2" className="text-3xl font-semibold tracking-tight">GPA Overview</CardTitle>
           <p className="text-muted-foreground text-sm">
             {mode === "history" ? "Historical performance by semester" : "Projected GPA confidence bands"}
           </p>
@@ -100,11 +103,17 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
           key={mode}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          className="w-full h-[420px]"
+          transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+          className="w-full h-[460px]"
         >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 20, right: 36, left: 12, bottom: 0 }}>
+              <Defs>
+                <LinearGradient id="range" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={HIGH} stopOpacity={0.4} />
+                  <stop offset="100%" stopColor={HIGH} stopOpacity={0.1} />
+                </LinearGradient>
+              </Defs>
 
               <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.1} />
               <XAxis
@@ -136,7 +145,7 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
                     x2={end}
                     strokeOpacity={0}
                     fillOpacity={0.04}
-                    label={{ value: level, position: "insideTopLeft", dy: 4, fill: "var(--muted-foreground)", fontSize: 11 }}
+                    label={{ value: level, position: "insideTopLeft", dominantBaseline: "text-before-edge", fill: "var(--muted-foreground)", fontSize: 11 }}
                   />
                 );
               })}
@@ -154,6 +163,25 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
                 />
               ) : (
                 <>
+                  {/* Area between high and low */}
+                  <Area
+                    type="monotone"
+                    dataKey="high"
+                    fillOpacity={0.08}
+                    stroke="transparent"
+                    fill="url(#range)"
+                    activeDot={false}
+                    connectNulls
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="low"
+                    fillOpacity={0}
+                    stroke="transparent"
+                    activeDot={false}
+                    connectNulls
+                  />
+                
                   <Line
                     type="monotone"
                     dataKey="avg"
@@ -162,6 +190,7 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
                     strokeWidth={2}
                     strokeDasharray="4 4"
                     dot={false}
+                    connectNulls
                   />
                   <Line
                     type="monotone"
@@ -170,14 +199,16 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
                     stroke={HIGH}
                     strokeWidth={1.5}
                     dot={false}
+                    connectNulls
                   />
                   <Line
                     type="monotone"
                     dataKey="low"
                     name="Low Possibility"
-                    stroke={LOW}
-                    strokeWidth={1.5}
+                    stroke={"#475569"} 
+                    strokeWidth={2}
                     dot={false}
+                    connectNulls
                   />
                 </>
               )}
