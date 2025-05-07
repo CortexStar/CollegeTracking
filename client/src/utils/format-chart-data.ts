@@ -1,5 +1,5 @@
 import { Semester as GpaSemester } from "@/components/GpaDashboard";
-import { Semester } from "@/utils/organizeSemesters";
+import { Semester } from "@/utils/parseCourseData";
 
 /**
  * Maps academic year to a year level string

@@ -18,8 +18,6 @@ import {
   Tooltip,
   Legend,
   ReferenceArea,
-  Defs,
-  LinearGradient,
   CartesianGrid,
 } from "recharts";
 import { motion } from "framer-motion";
@@ -58,7 +56,7 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
   );
   const avgGpa = useMemo(() => {
     if (!completed.length) return 0;
-    return completed.reduce((acc, s) => acc + s.gpa, 0) / completed.length;
+    return completed.reduce((acc, s) => acc + (s.gpa || 0), 0) / completed.length;
   }, [completed]);
 
   const withForecast = useMemo(() => {
@@ -107,12 +105,6 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
         >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 20, right: 36, left: 12, bottom: 0 }}>
-              <Defs>
-                <LinearGradient id="gpaGradient" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor={GRADIENT_FROM} />
-                  <stop offset="100%" stopColor={GRADIENT_TO} />
-                </LinearGradient>
-              </Defs>
 
               <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.1} />
               <XAxis
@@ -127,7 +119,6 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
               />
               <Tooltip
                 contentStyle={{ backdropFilter: "blur(6px)", background: "rgba(255,255,255,0.7)", borderRadius: 12, border: "none" }}
-                formatter={(val: unknown) => (val === null ? "—" : val)}
               />
               <Legend verticalAlign="top" height={36} wrapperStyle={{ paddingBottom: 16 }} />
 
@@ -156,9 +147,9 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
                   type="monotone"
                   dataKey="gpa"
                   name="GPA"
-                  stroke="url(#gpaGradient)"
+                  stroke={GRADIENT_FROM}
                   strokeWidth={3}
-                  dot={{ r: 6, stroke: "white", strokeWidth: 2, fill: "url(#gpaGradient)" }}
+                  dot={{ r: 6, stroke: "white", strokeWidth: 2, fill: GRADIENT_FROM }}
                   isAnimationActive={false}
                 />
               ) : (
