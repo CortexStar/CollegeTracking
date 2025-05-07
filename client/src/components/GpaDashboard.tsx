@@ -131,8 +131,7 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
     <Card className="w-full backdrop-blur-md bg-white/60 dark:bg-slate-900/60 border border-white/30 dark:border-slate-700/40 shadow-xl rounded-2xl">
       <CardHeader className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 p-6">
         <div>
-          <CardTitle className="text-3xl font-semibold tracking-tight">GPA Overview</CardTitle>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-base font-semibold">
             {mode === "history" && "Semester GPA"}
             {mode === "overall" && "Cumulative GPA"}
             {mode === "forecast" && "Projected cumulative GPA"}
