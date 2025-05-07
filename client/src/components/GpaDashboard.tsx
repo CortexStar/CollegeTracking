@@ -96,10 +96,21 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
     }
     if (season === "Fall" && idx < 3) idx++;
 
+    // Stop at Spring 2027
+    const terminateYear = 2027;
+    const terminateSeason = "Spring";
+    let projections = 0;
+    
     for (let h = 1; h <= 6; h++) {
+      // Stop if we've reached Spring 2027
+      if (year > terminateYear || (year === terminateYear && season === terminateSeason)) {
+        break;
+      }
+      
       const damp = (1 - Math.pow(PHI, h)) / (1 - PHI);
       const yHat = round2(Math.min(4, Math.max(0, L + PHI * damp * T)));
       series.push({ id: `f-${season}-${year}`, term: `${season} ${year}`, yearLevel: levels[idx], proj: yHat });
+      
       if (season === "Fall") season = "Spring"; else { season = "Fall"; year += 1; if (idx < 3) idx++; }
     }
     return series;
@@ -140,7 +151,7 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
             <LineChart data={view.data} margin={{ top: 20, right: 36, left: 12, bottom: 40 }}>
               <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.06} />
               <XAxis dataKey="term" interval="preserveStartEnd" tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
-              <YAxis domain={[0, 4]} tickFormatter={(v) => v.toFixed(2)} tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
+              <YAxis domain={[2, 4]} ticks={[2, 2.5, 3, 3.5, 4]} tickFormatter={(v) => v.toFixed(2)} tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
               <Tooltip formatter={(v: any) => (v != null ? (v as number).toFixed(2) : "–")} labelFormatter={(t) => `Term: ${t}`} contentStyle={{ backdropFilter: "blur(6px)", background: "rgba(255,255,255,0.85)", borderRadius: 12, border: "none" }} />
               <Legend verticalAlign="top" height={36} wrapperStyle={{ paddingBottom: 16 }} />
 
