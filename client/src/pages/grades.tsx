@@ -326,7 +326,7 @@ export default function GradesPage() {
 
   return (
     <div className="container py-6 max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Grades Summary</h1>
+      <h1 className="text-3xl font-bold mb-6 pb-2 border-b-2 border-primary/30 inline-block">Grades Summary</h1>
       
       {/* Overall Stats */}
       <OverviewStats 
@@ -338,7 +338,7 @@ export default function GradesPage() {
       {/* Semesters Section */}
       <div className="space-y-4 mt-10">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold">Semesters</h2>
+          <h2 className="text-3xl font-bold pb-2 border-b-2 border-primary/30 inline-block">Semesters</h2>
           <Button size="sm" variant="outline" onClick={() => setIsDialogOpen(true)}>Add Semester</Button>
         </div>
 
@@ -353,7 +353,7 @@ export default function GradesPage() {
               >
                 {organizedSections.map((section) => (
                   <div key={section.year}>
-                    <h3 className="text-xl font-semibold mb-4">{section.year}</h3>
+                    <h3 className="text-xl font-semibold mb-4 uppercase tracking-wider">{section.year}</h3>
                     {section.semesters.map((semester, index) => (
                       <SemesterDropdown
                         key={semester.id}
