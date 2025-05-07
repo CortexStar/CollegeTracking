@@ -426,9 +426,12 @@ export default function GradesPage() {
         
         {/* GPA Visualization Dashboard */}
         {semesters.length > 0 && (
-          <div className="mt-12 mb-8">
+          <div className="mt-12 mb-8 md:h-[500px]">
             <GpaDashboard
-              semesters={formatSemestersForChart(semesters, organizedSections)}
+              semesters={formatSemestersForChart(
+                generateFutureSemesters(semesters),
+                organizedSections
+              )}
             />
           </div>
         )}
