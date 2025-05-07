@@ -16,31 +16,26 @@ import {
   Legend,
   ReferenceArea,
   CartesianGrid,
-  Area,
 } from "recharts";
 import { motion } from "framer-motion";
 
 /**
- * GPA DASHBOARD – v3
+ * GPA DASHBOARD – v4 (green theme)
  * ────────────────────────────────────────────────────────────────────────────
- * Now supports three views:
- *   • History    – semester‑level GPA
- *   • Cumulative – overall GPA after each term
- *   • Forecast   – projection bands based on *overall* GPA
+ * Views:
+ *   • History    – term GPA
+ *   • Overall    – cumulative GPA
+ *   • Forecast   – linear‑regression projection of cumulative GPA
  *
- * The forecasting curve seeds from the cumulative GPA of the last completed
- * term, not the term GPA itself.
- *
- * Tailwind/shadcn + Recharts, no external CSS.
+ *  ▸ All GPAs rounded to two decimals.
+ *  ▸ Lines now green (#10b981). Forecast uses dotted stroke.
  */
 
 export interface Semester {
   id: string;
-  term: string; // e.g. "Fall 2023"
+  term: string;
   yearLevel: "Freshman" | "Sophomore" | "Junior" | "Senior";
-  /** Semester GPA (per‑term). */
   gpa: number | null;
-  /** (optional) credits + gradePoints let us compute weighted cumulative */
   credits?: number;
   gradePoints?: number;
 }
@@ -49,97 +44,77 @@ interface Props {
   semesters: Semester[];
 }
 
-const COLORS = {
-  primary: "#4f46e5", // indigo‑600
-  avg: "#0ea5e9",     // sky‑500
-  high: "#4f46e5",
-  low:  "#475569",    // slate‑600
-};
+const GREEN = "#10b981"; // emerald‑500
+const round2 = (v: number | null) => (v == null ? null : Math.round(v * 100) / 100);
 
 /** ───────────────────────────────────────────────────────────────────────── */
 const GpaDashboard: React.FC<Props> = ({ semesters }) => {
-  const [mode, setMode] = useState<"history" | "cumulative" | "forecast">(
-    "history"
-  );
+  const [mode, setMode] = useState<"history" | "overall" | "forecast">("history");
 
-  /** ----------------------------------------------------------------------
-   * Helpers
-   */
-  const completed = useMemo(() => semesters.filter((s) => s.gpa !== null) as Required<Semester>[], [semesters]);
-
-  /** Cumulative GPA after each term */
+  /** Build cumulative GPA (weighted if credits provided) */
   const cumulativeData = useMemo(() => {
-    let runningCredits = 0;
-    let runningPoints = 0;
+    let cred = 0;
+    let pts = 0;
     return semesters.map((s) => {
-      if (s.gpa !== null) {
-        // prefer weighted calc if credits present
+      if (s.gpa != null) {
         if (s.credits != null && s.gradePoints != null) {
-          runningCredits += s.credits;
-          runningPoints += s.gradePoints;
+          cred += s.credits;
+          pts += s.gradePoints;
         } else {
-          // fallback simple avg of term GPAs
-          runningCredits += 1;
-          runningPoints += s.gpa;
+          cred += 1;
+          pts += s.gpa;
         }
       }
-      const cumulative = runningCredits ? runningPoints / runningCredits : null;
-      return { ...s, cumulative } as any;
+      const cumulative = cred ? pts / cred : null;
+      return { ...s, cumulative: round2(cumulative) } as any;
     });
   }, [semesters]);
 
-  const lastOverall = cumulativeData[cumulativeData.findIndex((s) => s.gpa === null) - 1]?.cumulative ?? 0;
-  const classAverage = lastOverall;
-
-  /** Forecast rows – extend to Senior Spring */
+  /** -------- Linear regression on cumulative GPA -------- */
   const forecastData = useMemo(() => {
-    if (!semesters.length) return [] as any[];
+    if (!cumulativeData.length) return [] as any[];
 
+    // take completed rows
+    const observed = cumulativeData.filter((d) => d.cumulative != null);
+    const n = observed.length;
+    if (n < 2) return cumulativeData; // not enough data
+
+    const xs = observed.map((_, i) => i);
+    const ys = observed.map((d) => d.cumulative as number);
+    const xBar = xs.reduce((a, b) => a + b, 0) / n;
+    const yBar = ys.reduce((a, b) => a + b, 0) / n;
+    const slope = xs.reduce((acc, x, i) => acc + (x - xBar) * (ys[i] - yBar), 0) /
+                  xs.reduce((acc, x) => acc + Math.pow(x - xBar, 2), 0);
+    const intercept = yBar - slope * xBar;
+
+    // copy existing
+    const proj: any[] = cumulativeData.map((d, i) => ({ ...d, proj: d.cumulative }));
+
+    // generate future semesters up to Senior Spring (max 6)
     const levelOrder = ["Freshman", "Sophomore", "Junior", "Senior"] as const;
-
-    const initial: any[] = cumulativeData.map((s) => {
-      if (s.gpa === null) {
-        // upcoming term already included (draft blank row from prev logic) – overwrite later
-        return null;
-      }
-      // copy real rows; include overall to anchor forecast line
-      return { ...s, avg: s.cumulative, high: s.cumulative, low: s.cumulative };
-    });
-
-    // prune nulls that represent existing future placeholders (if any)
-    const seeded = initial.filter(Boolean);
-
-    // derive next season / year level info from last semester object
-    const last = semesters[semesters.length - 1];
-    let [season, yearStr] = last.term.split(" ") as ["Fall" | "Spring", string];
-    let year = parseInt(yearStr, 10);
+    let last = semesters[semesters.length - 1];
+    let [season, yStr] = last.term.split(" ") as ["Fall" | "Spring", string];
+    let year = parseInt(yStr, 10);
     let levelIdx = levelOrder.indexOf(last.yearLevel as any);
-
-    // step to the *next* term
     if (season === "Fall") {
       season = "Spring";
       year += 1;
     } else {
       season = "Fall";
     }
-    if (season === "Fall" && levelIdx < 3) levelIdx += 1; // promote after Spring
+    if (season === "Fall" && levelIdx < 3) levelIdx++;
 
-    const horizon = 6; // semesters to add (Junior + Senior)
-
-    for (let i = 0; i < horizon; i++) {
-      const step = (i + 1) / horizon; // 0 → 1
-      const termLabel = `${season} ${year}`;
-      const yrLevel = levelOrder[levelIdx] as "Freshman" | "Sophomore" | "Junior" | "Senior";
-
-      seeded.push({
-        id: `fcast-${termLabel}`,
-        term: termLabel,
-        yearLevel: yrLevel,
+    const horizon = 6;
+    for (let k = 1; k <= horizon; k++) {
+      const termIdx = observed.length - 1 + k; // x for regression
+      const yPred = round2(intercept + slope * termIdx);
+      proj.push({
+        id: `fcast-${season}-${year}`,
+        term: `${season} ${year}`,
+        yearLevel: levelOrder[levelIdx],
         gpa: null,
         cumulative: null,
-        avg: lastOverall + (classAverage - lastOverall) * step,
-        high: Math.min(4, lastOverall + 0.4 - 0.1 * step),
-        low: Math.max(0, lastOverall - 0.4 + 0.1 * step),
+        proj: yPred,
       });
 
       // advance term
@@ -148,26 +123,25 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
       } else {
         season = "Fall";
         year += 1;
-        if (levelIdx < 3) levelIdx += 1;
+        if (levelIdx < 3) levelIdx++;
       }
     }
+    return proj;
+  }, [cumulativeData, semesters]);
 
-    return seeded;
-  }, [semesters, cumulativeData, lastOverall, classAverage]);
-
-  /** Choose dataset + primary line key */
-  const { chartData, lineKey } = useMemo(() => {
+  /** Pick dataset for chart */
+  const { data, yKey, label } = useMemo(() => {
     switch (mode) {
       case "history":
-        return { chartData: semesters, lineKey: "gpa" };
-      case "cumulative":
-        return { chartData: cumulativeData, lineKey: "cumulative" };
+        return { data: semesters.map((s) => ({ ...s, gpa: round2(s.gpa) })), yKey: "gpa", label: "GPA" };
+      case "overall":
+        return { data: cumulativeData, yKey: "cumulative", label: "Cumulative GPA" };
       case "forecast":
-        return { chartData: forecastData, lineKey: "avg" };
+        return { data: forecastData, yKey: "proj", label: "Projected GPA" };
     }
   }, [mode, semesters, cumulativeData, forecastData]);
 
-  /** ---------------------------------------------------------------------- */
+  /** -------------------------------------------------------------------- */
   return (
     <Card className="w-full backdrop-blur-md bg-white/60 dark:bg-slate-900/60 border border-white/30 dark:border-slate-700/40 shadow-xl rounded-2xl">
       <CardHeader className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 p-6">
@@ -175,110 +149,46 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
           <CardTitle className="text-3xl font-semibold tracking-tight">GPA Overview</CardTitle>
           <p className="text-muted-foreground text-sm">
             {mode === "history" && "Semester GPA"}
-            {mode === "cumulative" && "Cumulative GPA"}
-            {mode === "forecast" && "Projected GPA confidence bands"}
+            {mode === "overall" && "Cumulative GPA"}
+            {mode === "forecast" && "Projected cumulative GPA (linear)"}
           </p>
         </div>
-
-        {/* mode selector */}
-        <ToggleGroup
-          type="single"
-          value={mode}
-          onValueChange={(v) => v && setMode(v as any)}
-          className="border border-slate-300 dark:border-slate-700 rounded-full overflow-hidden backdrop-blur-sm"
-        >
-          <ToggleGroupItem value="history" className="px-4 py-1">
-            History
-          </ToggleGroupItem>
-          <ToggleGroupItem value="cumulative" className="px-4 py-1">
-            Overall
-          </ToggleGroupItem>
-          <ToggleGroupItem value="forecast" className="px-4 py-1">
-            Forecast
-          </ToggleGroupItem>
+        <ToggleGroup type="single" value={mode} onValueChange={(v) => v && setMode(v as any)} className="border border-slate-300 dark:border-slate-700 rounded-full overflow-hidden backdrop-blur-sm">
+          <ToggleGroupItem value="history" className="px-4 py-1">History</ToggleGroupItem>
+          <ToggleGroupItem value="overall" className="px-4 py-1">Overall</ToggleGroupItem>
+          <ToggleGroupItem value="forecast" className="px-4 py-1">Forecast</ToggleGroupItem>
         </ToggleGroup>
       </CardHeader>
 
       <CardContent className="p-0">
-        <motion.div
-          key={mode}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-          className="w-full h-[500px]"
-        >
+        <motion.div key={mode} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="w-full h-[500px]">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 20, right: 36, left: 12, bottom: 40 }}>
+            <LineChart data={data} margin={{ top: 20, right: 36, left: 12, bottom: 40 }}>
               <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.1} />
               <XAxis dataKey="term" interval="preserveStartEnd" tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
-              <YAxis domain={[0, 4]} tickCount={5} tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
-              <Tooltip labelFormatter={(t) => `Term: ${t}`} contentStyle={{ backdropFilter: "blur(6px)", background: "rgba(255,255,255,0.7)", borderRadius: 12, border: "none" }} />
+              <YAxis domain={[0, 4]} tickFormatter={(v) => v.toFixed(2)} tickCount={5} tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
+              <Tooltip formatter={(v: any) => (v != null ? (v as number).toFixed(2) : "–")} labelFormatter={(t) => `Term: ${t}`} contentStyle={{ backdropFilter: "blur(6px)", background: "rgba(255,255,255,0.7)", borderRadius: 12, border: "none" }} />
               <Legend verticalAlign="top" height={36} wrapperStyle={{ paddingBottom: 16 }} />
 
-              {/* year shading */}
               {(["Freshman", "Sophomore", "Junior", "Senior"] as const).map((level) => {
-                const indices = chartData
-                  .map((s, i) => (s.yearLevel === level ? i : -1))
-                  .filter((i) => i !== -1);
-                if (!indices.length) return null;
-                const [start, end] = [Math.min(...indices) - 0.5, Math.max(...indices) + 0.5];
-                return (
-                  <ReferenceArea key={level} x1={start} x2={end} strokeOpacity={0} fillOpacity={0.04} label={{ value: level, position: "insideTopLeft", dominantBaseline: "text-before-edge", fill: "var(--muted-foreground)", fontSize: 11 }} />
-                );
+                const idx = data.map((s, i) => (s.yearLevel === level ? i : -1)).filter((i) => i !== -1);
+                if (!idx.length) return null;
+                const [start, end] = [Math.min(...idx) - 0.5, Math.max(...idx) + 0.5];
+                return <ReferenceArea key={level} x1={start} x2={end} strokeOpacity={0} fillOpacity={0.04} />;
               })}
 
-              {/* main line for history & cumulative */}
-              {mode !== "forecast" && (
-                <Line
-                  type="monotone"
-                  dataKey={lineKey}
-                  name={mode === "history" ? "GPA" : "Cumulative GPA"}
-                  stroke={COLORS.primary}
-                  strokeWidth={3}
-                  strokeLinecap="round"
-                  dot={{ r: 6, stroke: "white", strokeWidth: 2, fill: COLORS.primary }}
-                  activeDot={{ r: 7 }}
-                />
-              )}
-
-              {/* forecast visuals */}
-              {mode === "forecast" && (
-                <>
-                  {/* shaded band */}
-                  <Area type="monotone" dataKey="high" stackId="band" stroke="transparent" fill={COLORS.primary} fillOpacity={0.06} connectNulls />
-                  <Area type="monotone" dataKey="low" stackId="band" stroke="transparent" fill="#fff" fillOpacity={0} connectNulls />
-
-                  <Line
-                    type="monotone"
-                    dataKey="avg"
-                    name="Avg Forecast"
-                    stroke={COLORS.primary}
-                    strokeWidth={3}
-                    strokeLinecap="round"
-                    dot={{ r: 6, stroke: "white", strokeWidth: 2, fill: COLORS.primary }}
-                    activeDot={{ r: 7 }}
-                    connectNulls
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="high"
-                    name="High Possibility"
-                    stroke={COLORS.high}
-                    strokeWidth={2}
-                    dot={{ r: 4, fill: COLORS.high }}
-                    connectNulls
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="low"
-                    name="Low Possibility"
-                    stroke={COLORS.low}
-                    strokeWidth={2}
-                    dot={{ r: 4, fill: COLORS.low }}
-                    connectNulls
-                  />
-                </>
-              )}
+              <Line
+                type="monotone"
+                dataKey={yKey}
+                name={label}
+                stroke={GREEN}
+                strokeWidth={3}
+                strokeLinecap="round"
+                strokeDasharray={mode === "forecast" ? "4 4" : undefined}
+                dot={{ r: 6, stroke: "white", strokeWidth: 2, fill: GREEN }}
+                activeDot={{ r: 7 }}
+                connectNulls
+              />
             </LineChart>
           </ResponsiveContainer>
         </motion.div>
