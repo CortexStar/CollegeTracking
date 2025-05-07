@@ -67,8 +67,8 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
     // First, include all existing semesters with their completed data
     const result = semesters.map(s => {
       if (s.gpa !== null) {
-        // completed semester - keep history line
-        return { ...s, avg: null, high: null, low: null };
+        // Copy values so the forecast line joins history seamlessly
+        return { ...s, avg: s.gpa, high: s.gpa, low: s.gpa };
       }
       // pending semester
       return {
@@ -112,6 +112,11 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
       levelIndex++;
     }
 
+    // Configure forecast settings
+    const classAverage = avgGpa;        // reuse what you've computed
+    const horizon = 6;                 // # of future semesters
+    let semesterCount = 0;
+    
     // Generate future semesters until we reach Senior Spring
     while (!(yearLevel === "Senior" && season === "Spring")) {
       // Create the next semester
@@ -119,16 +124,21 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
       const nextTerm = `${season} ${year}`;
       const nextYearLevel = levelOrder[levelIndex] as "Freshman" | "Sophomore" | "Junior" | "Senior";
       
-      // Add to results
+      // Calculate fraction of progress (0 to 1) through the forecast period
+      const step = semesterCount / horizon;
+      
+      // Add to results with a trending forecast
       result.push({
         id: nextId,
         term: nextTerm,
         yearLevel: nextYearLevel,
         gpa: null,
-        avg: lastReal,
-        high: Math.min(4, lastReal + 0.3),
-        low: Math.max(0, lastReal - 0.3),
+        avg: lastReal + (classAverage - lastReal) * step,
+        high: Math.min(4, lastReal + 0.4 - 0.1 * step),
+        low: Math.max(0, lastReal - 0.4 + 0.1 * step),
       });
+      
+      semesterCount++;
       
       // Advance to next term
       if (season === "Fall") {
@@ -155,7 +165,7 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
   const chartData = mode === "history" ? semesters : withForecast;
 
   return (
-    <Card className="w-full max-w-4xl mx-auto backdrop-blur-md bg-white/60 dark:bg-slate-900/60 border border-white/30 dark:border-slate-700/40 shadow-xl rounded-2xl">
+    <Card className="w-full max-w-4xl mx-auto backdrop-blur-md bg-white/60 dark:bg-slate-900/60 border border-white/30 dark:border-slate-700/40 shadow-xl rounded-2xl pb-4">
       <CardHeader className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 p-6">
         <div>
           <h2 className="sr-only">GPA Overview</h2>
@@ -188,13 +198,14 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
           className="w-full h-[460px]"
         >
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 20, right: 36, left: 12, bottom: 0 }}>
+            <LineChart data={chartData} margin={{ top: 20, right: 36, left: 12, bottom: 24 }}>
 
               <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.1} />
               <XAxis
                 dataKey="term"
                 tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
                 padding={{ left: 10, right: 10 }}
+                interval="preserveStartEnd"
               />
               <YAxis
                 domain={[0, 4]}
@@ -203,6 +214,7 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
               />
               <Tooltip
                 contentStyle={{ backdropFilter: "blur(6px)", background: "rgba(255,255,255,0.7)", borderRadius: 12, border: "none" }}
+                labelFormatter={(term) => `Term: ${term}`}
               />
               <Legend verticalAlign="top" height={36} wrapperStyle={{ paddingBottom: 16 }} />
 
@@ -245,7 +257,8 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
                   <Area
                     type="monotone"
                     dataKey="high"
-                    fillOpacity={0.05}
+                    stackId="band"
+                    fillOpacity={0.06}
                     stroke="transparent"
                     fill={HIGH}
                     activeDot={false}
@@ -254,8 +267,10 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
                   <Area
                     type="monotone"
                     dataKey="low"
+                    stackId="band"
                     fillOpacity={0}
                     stroke="transparent"
+                    fill="#ffffff"
                     activeDot={false}
                     connectNulls
                   />
