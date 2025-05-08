@@ -169,7 +169,8 @@ export function parseTranscriptText(rawText: string): Course[] {
   let inCourseSection = false;
   const courseSectionStartKeywords = ["Course (Class)", "Course Title"];
   const courseDataHeaderKeywords = ["Grade", "Credit Attempted", "Credit Earned", "Credit for GPA"];
-  const endCourseSectionKeywords = ["Requirement", "Term GPA", "Overall GPA", "UNIVERSITY GPA"];
+  // Renamed to be more descriptive - these can appear within a list of courses
+  const interstitialOrEndKeywords = ["Requirement", "Term GPA", "Overall GPA", "UNIVERSITY GPA"];
 
   let lineIndex = 0;
 
@@ -204,7 +205,7 @@ export function parseTranscriptText(rawText: string): Course[] {
                     inCourseSection = true;
                     break;
                 }
-                if (endCourseSectionKeywords.some(keyword => lines[i].toUpperCase().includes(keyword.toUpperCase()))) break; // Don't search too far
+                if (interstitialOrEndKeywords.some((keyword: string) => lines[i].toUpperCase().includes(keyword.toUpperCase()))) break; // Don't search too far
             }
             if(inCourseSection) break;
          }
@@ -232,14 +233,17 @@ export function parseTranscriptText(rawText: string): Course[] {
   for (; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
 
-    if (endCourseSectionKeywords.some(keyword => line.toUpperCase().includes(keyword.toUpperCase()))) {
+    if (interstitialOrEndKeywords.some((keyword: string) => line.toUpperCase().includes(keyword.toUpperCase()))) {
+      // This line is a keyword. Finalize the course processed so far (if any).
       if (isValidCourse(currentCourse)) {
         currentCourse.gradePoints = calculateGradePoints(currentCourse.credits!, currentCourse.grade!);
         currentCourse._uid = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         courses.push(currentCourse as Course);
       }
-      currentCourse = {}; // Reset for safety, though we are breaking
-      break; // End of course section
+      // Reset for any potential new course or data block that might follow.
+      currentCourse = {};
+      collectedDataForCourse = [];
+      continue; // Skip this keyword line and process the next line
     }
 
     const courseCodeMatch = line.match(courseCodePattern);
