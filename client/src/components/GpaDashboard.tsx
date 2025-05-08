@@ -30,6 +30,7 @@ export interface Semester {
   gpa: number | null;
   credits?: number;
   gradePoints?: number;
+  sortKey?: number; // Optional sort key for chronological ordering
 }
 
 interface Props {
@@ -49,9 +50,19 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
 
   /* cumulative */
   const cumulative = useMemo(() => {
+    // Use sortKey to ensure chronological order before calculating cumulative values
+    const orderedSemesters = [...semesters].sort((a, b) => {
+      // If both semesters have sortKeys, use them for ordering
+      if (a.sortKey !== undefined && b.sortKey !== undefined) {
+        return a.sortKey - b.sortKey;
+      }
+      // Otherwise fall back to array order
+      return 0;
+    });
+    
     let cr = 0,
       gp = 0;
-    return semesters.map((s) => {
+    return orderedSemesters.map((s) => {
       if (s.gpa != null) {
         if (s.credits != null && s.gradePoints != null) {
           cr += s.credits;
@@ -118,12 +129,41 @@ const GpaDashboard: React.FC<Props> = ({ semesters }) => {
 
   const view = useMemo(() => {
     switch (mode) {
-      case "history":
-        return { data: semesters.map((s) => ({ ...s, gpa: round2(s.gpa) })), key: "gpa", color: GREEN, label: "GPA", extra: null };
+      case "history": {
+        // Sort semesters by sortKey to ensure chronological order in history view
+        const orderedSemesters = [...semesters]
+          .sort((a, b) => {
+            if (a.sortKey !== undefined && b.sortKey !== undefined) {
+              return a.sortKey - b.sortKey;
+            }
+            return 0;
+          })
+          .map((s) => ({ ...s, gpa: round2(s.gpa) }));
+          
+        return { 
+          data: orderedSemesters, 
+          key: "gpa", 
+          color: GREEN, 
+          label: "GPA", 
+          extra: null 
+        };
+      }
       case "overall":
-        return { data: cumulative, key: "cumulative", color: GREEN, label: "Cumulative GPA", extra: null };
+        return { 
+          data: cumulative, 
+          key: "cumulative", 
+          color: GREEN, 
+          label: "Cumulative GPA", 
+          extra: null 
+        };
       case "forecast":
-        return { data: forecast, key: "proj", color: PURPLE, label: "Projected GPA", extra: "cumulative" };
+        return { 
+          data: forecast, 
+          key: "proj", 
+          color: PURPLE, 
+          label: "Projected GPA", 
+          extra: "cumulative" 
+        };
     }
   }, [mode, semesters, cumulative, forecast]);
 

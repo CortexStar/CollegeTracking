@@ -1,5 +1,6 @@
 import { Semester as GpaSemester } from "@/components/GpaDashboard";
 import { Semester } from "@/utils/parseCourseData";
+import { SemesterSection } from "@/utils/organizeSemesters";
 
 /**
  * Maps academic year to a year level string
@@ -31,22 +32,62 @@ const getGradeValue = (grade: string): number | null => {
 };
 
 /**
+ * Extracts details from a semester name to create a sortable key
+ */
+function getSemesterSortKey(semesterName: string): number {
+  const upperName = semesterName.toUpperCase();
+  let year = 0;
+  let termOrder = 5; // Default/unknown
+  
+  // Extract the year (matches the first 4-digit sequence)
+  const yearMatch = upperName.match(/\d{4}/);
+  if (yearMatch) {
+    year = parseInt(yearMatch[0], 10);
+  }
+  
+  // Determine the term order
+  if (upperName.includes("SPRING")) {
+    termOrder = 1;
+  } else if (upperName.includes("SUMMER")) {
+    termOrder = 2;
+  } else if (upperName.includes("FALL")) {
+    termOrder = 3;
+  } else if (upperName.includes("WINTER")) {
+    termOrder = 4;
+  }
+  
+  // Create a single numeric sort key (year * 10 + termOrder)
+  // This ensures proper chronological ordering
+  return (year * 10) + termOrder;
+}
+
+/**
  * Converts the application's semester data to the format expected by the GPA dashboard
+ * Ensures chronological ordering of semesters in the visualization
  */
 export function formatSemestersForChart(
   semesters: Semester[],
-  organizedSections: { year: string; semesters: Semester[] }[]
+  organizedSections: SemesterSection[]
 ): GpaSemester[] {
-  // Create a map to associate each semester with its year
-  const semesterYearMap = new Map<string, string>();
+  // Create a map to associate each semester with its section metadata
+  const semesterSectionMap = new Map<string, SemesterSection>();
   
+  // Create a flat array of all semesters in their proper chronological order
+  let allSemestersInOrder: Semester[] = [];
+  
+  // First, populate the section map and create an ordered list of semesters
   organizedSections.forEach(section => {
     section.semesters.forEach(semester => {
-      semesterYearMap.set(semester.id, section.year);
+      semesterSectionMap.set(semester.id, section);
     });
+    
+    // Add all semesters from this section in their current order
+    allSemestersInOrder = [...allSemestersInOrder, ...section.semesters];
   });
-
-  return semesters.map(semester => {
+  
+  // Prepare GPA semester data, maintaining the same chronological order
+  // as established by the organized sections
+  return allSemestersInOrder.map(semester => {
     // Calculate total credits and grade points for this semester
     let totalCredits = 0;
     let totalGradePoints = 0;
@@ -67,13 +108,17 @@ export function formatSemestersForChart(
       });
     }
     
+    const section = semesterSectionMap.get(semester.id);
+    
     return {
       id: semester.id,
       term: semester.name,
-      yearLevel: mapYearToLevel(semesterYearMap.get(semester.id) || "Freshman"),
+      yearLevel: mapYearToLevel(section?.year || "Freshman"),
       gpa: semester.gpa,
       credits: totalCredits > 0 ? totalCredits : undefined,
       gradePoints: totalGradePoints > 0 ? totalGradePoints : undefined,
+      // Add additional metadata to help with sorting/ordering
+      sortKey: getSemesterSortKey(semester.name)
     };
   });
 }
