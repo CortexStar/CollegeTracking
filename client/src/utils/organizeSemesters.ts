@@ -8,14 +8,20 @@ export interface SemesterSection {
   semesters: Semester[];
 }
 
+// Renamed to match the provided code style
+export interface OrganizedSemesterGroup {
+  yearLabel: string; // e.g., "FRESHMAN", "SOPHOMORE"
+  semesters: Semester[];
+}
+
 /**
- * Mapping of season names to their relative order within an academic year
+ * Defines the chronological order of terms within a calendar year
  */
-const SEASON_ORDER: Record<string, number> = { 
-  spring: 1, 
-  summer: 2, 
-  fall: 3, 
-  winter: 4 
+const termOrderMap: { [key: string]: number } = {
+  SPRING: 1,
+  SUMMER: 2,
+  FALL: 3,
+  WINTER: 4,
 };
 
 /**
@@ -29,140 +35,122 @@ const ACADEMIC_LABELS = [
   "Graduate"
 ];
 
+interface SortableSemester extends Semester {
+  parsedYear: number;
+  termSortOrder: number;
+  termName: string; // "SPRING", "SUMMER", "FALL"
+}
+
+/**
+ * Parse a semester name to extract year and term information
+ */
+function parseSemesterName(name: string): { year: number; term: string; termSortOrder: number } {
+  const upperName = name.toUpperCase();
+  const yearMatch = upperName.match(/\d{4}/);
+  const year = yearMatch ? parseInt(yearMatch[0], 10) : 0;
+
+  let term = "UNKNOWN";
+  let termSortOrder = 99; // Default for unknown terms, sorts last
+
+  if (upperName.includes("SPRING")) {
+    term = "SPRING";
+    termSortOrder = termOrderMap.SPRING;
+  } else if (upperName.includes("SUMMER")) {
+    term = "SUMMER";
+    termSortOrder = termOrderMap.SUMMER;
+  } else if (upperName.includes("FALL")) {
+    term = "FALL";
+    termSortOrder = termOrderMap.FALL;
+  } else if (upperName.includes("WINTER")) {
+    term = "WINTER";
+    termSortOrder = termOrderMap.WINTER;
+  }
+
+  return { year, term, termSortOrder };
+}
+
 /**
  * Organize a flat list of semesters into chronological sections:
- * - Non-summer semesters are grouped two per academic year: Freshman, Sophomore, etc.
- * - Summer semesters each get their own "Summer {year}" section,
- *   and appear at the correct point in the timeline.
+ * - First sorts all semesters chronologically by year and term
+ * - Then groups them into academic years (Freshman, Sophomore, etc.)
  */
 export function organizeSemesters(semesters: Semester[]): SemesterSection[] {
   if (!semesters || semesters.length === 0) {
     return [];
   }
-  
-  // Parse name to season/year, keep original semester
-  const parsed = semesters
-    .map((sem) => {
-      const match = sem.name.match(/(Spring|Summer|Fall|Winter)\s+(\d{4})/i);
-      if (!match) {
-        // Check if it's already labeled as an academic year
-        for (const academicLabel of ACADEMIC_LABELS) {
-          if (sem.name.includes(academicLabel)) {
-            return { sem, season: "", academicYear: true, year: 0, label: academicLabel };
-          }
-        }
-        // Unknown format: push to end as misc
-        return { sem, season: "", academicYear: false, year: 0, label: "Miscellaneous" };
-      }
-      return {
-        sem,
-        season: match[1].toLowerCase(),
-        academicYear: false,
-        year: parseInt(match[2], 10),
-        label: ""
-      };
-    })
-    .sort((a, b) => {
-      // If either is pre-labeled as academic year, respect that
-      if (a.academicYear && b.academicYear) {
-        return ACADEMIC_LABELS.indexOf(a.label) - ACADEMIC_LABELS.indexOf(b.label);
-      }
-      if (a.academicYear) return -1;
-      if (b.academicYear) return 1;
-      
-      // chronological: by year, then season order
-      const yearDiff = a.year - b.year;
-      if (yearDiff !== 0) return yearDiff;
-      return (SEASON_ORDER[a.season] || 0) - (SEASON_ORDER[b.season] || 0);
-    });
 
-  const sections: SemesterSection[] = [];
-  let nonSummerCount = 0;
-  let academicYearLabels: Record<string, boolean> = {};
-  
-  // Initialize academic year tracking
-  ACADEMIC_LABELS.forEach(label => {
-    academicYearLabels[label] = false;
+  // 1. Create sortable semester objects
+  const sortableSemesters: SortableSemester[] = semesters.map(s => {
+    const { year, term, termSortOrder } = parseSemesterName(s.name);
+    return {
+      ...s,
+      parsedYear: year,
+      termSortOrder: termSortOrder,
+      termName: term,
+    };
   });
 
-  for (const item of parsed) {
-    const { sem, season, academicYear, year, label } = item;
-    
-    // If it's already marked with an academic year label
-    if (academicYear) {
-      const existingSection = sections.find(s => s.year === label);
-      if (existingSection) {
-        existingSection.semesters.push(sem);
-      } else {
-        academicYearLabels[label] = true;
-        sections.push({ year: label, semesters: [sem] });
-      }
-      continue;
+  // 2. Sort all semesters chronologically
+  sortableSemesters.sort((a, b) => {
+    if (a.parsedYear !== b.parsedYear) {
+      return a.parsedYear - b.parsedYear; // Sort by year first
     }
-    
-    if (season === "summer") {
-      // Each summer gets its own section
-      const summerLabel = `Summer ${year}`;
-      sections.push({ year: summerLabel, semesters: [sem] });
-    } 
-    else if (season === "spring" || season === "fall" || season === "winter") {
-      // Determine academic group index
-      const level = Math.floor(nonSummerCount / 2);
-      const academicLabel = level < ACADEMIC_LABELS.length 
-        ? ACADEMIC_LABELS[level] 
-        : `Year ${level + 1}`;
-      
-      // Find if this academic year section already exists
-      const existingSection = sections.find(s => s.year === academicLabel);
-      if (existingSection) {
-        existingSection.semesters.push(sem);
-      } else {
-        academicYearLabels[academicLabel] = true;
-        sections.push({ year: academicLabel, semesters: [sem] });
-      }
-      nonSummerCount++;
-    } 
-    else {
-      // Fallback for unrecognized names: group under "Miscellaneous"
-      const fallback = "Miscellaneous";
-      const existingSection = sections.find(s => s.year === fallback);
-      if (existingSection) {
-        existingSection.semesters.push(sem);
-      } else {
-        sections.push({ year: fallback, semesters: [sem] });
-      }
+    return a.termSortOrder - b.termSortOrder; // Then by term order (Spring < Summer < Fall)
+  });
+
+  // 3. Apply grouping logic for academic years
+  const groups: { [yearLabel: string]: SortableSemester[] } = {};
+  const academicYearLabels = ACADEMIC_LABELS.map(label => label.toUpperCase());
+  let firstFallYear = -1;
+
+  // Determine the first Fall year to anchor academic years
+  for (const sem of sortableSemesters) {
+    if (sem.termName === "FALL") {
+      firstFallYear = sem.parsedYear;
+      break;
     }
   }
+  
+  // If no Fall semester, use the earliest year as the anchor
+  if (firstFallYear === -1 && sortableSemesters.length > 0) {
+    // If starts with Spring or Summer, that academic year effectively 
+    // started the previous calendar year's Fall
+    firstFallYear = sortableSemesters[0].parsedYear - 
+      (sortableSemesters[0].termName === "FALL" ? 0 : 1);
+  }
 
-  // Sort sections in logical order:
-  // 1. Academic year labels in order (Freshman, Sophomore, etc.)
-  // 2. Summer sections by year
-  // 3. Miscellaneous at the end
-  return sections.sort((a, b) => {
-    // Put academic years first, in specified order
-    const aIsAcademic = ACADEMIC_LABELS.includes(a.year);
-    const bIsAcademic = ACADEMIC_LABELS.includes(b.year);
-    
-    if (aIsAcademic && bIsAcademic) {
-      return ACADEMIC_LABELS.indexOf(a.year) - ACADEMIC_LABELS.indexOf(b.year);
+  sortableSemesters.forEach(semester => {
+    let academicYearStart = semester.parsedYear;
+    if (semester.termName === "SPRING" || semester.termName === "SUMMER") {
+      academicYearStart--; // Spring & Summer belong to academic year that started with previous Fall
     }
-    
-    if (aIsAcademic) return -1;
-    if (bIsAcademic) return 1;
-    
-    // Sort summer sections by year
-    const aSummerMatch = a.year.match(/Summer\s+(\d{4})/i);
-    const bSummerMatch = b.year.match(/Summer\s+(\d{4})/i);
-    
-    if (aSummerMatch && bSummerMatch) {
-      return parseInt(aSummerMatch[1]) - parseInt(bSummerMatch[1]);
+
+    const yearIndex = firstFallYear !== -1 ? academicYearStart - firstFallYear : 0;
+    const yearLabel = yearIndex < academicYearLabels.length ? 
+      ACADEMIC_LABELS[yearIndex] : 
+      `Year ${yearIndex + 1}`;
+
+    if (!groups[yearLabel]) {
+      groups[yearLabel] = [];
     }
-    
-    // Miscellaneous goes at the end
-    if (a.year === "Miscellaneous") return 1;
-    if (b.year === "Miscellaneous") return -1;
-    
-    // Default alphabetical sort
-    return a.year.localeCompare(b.year);
+    groups[yearLabel].push(semester);
   });
+
+  // 4. Convert to expected output format
+  const organizedResult: SemesterSection[] = Object.keys(groups)
+    // Sort the groups themselves (e.g., FRESHMAN before SOPHOMORE)
+    .sort((labelA, labelB) => {
+      const indexA = ACADEMIC_LABELS.indexOf(labelA);
+      const indexB = ACADEMIC_LABELS.indexOf(labelB);
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1; // Known label comes first
+      if (indexB !== -1) return 1;
+      return labelA.localeCompare(labelB); // Fallback for "YEAR X"
+    })
+    .map(yearLabel => ({
+      year: yearLabel,
+      semesters: groups[yearLabel], // Semesters within group are already sorted chronologically
+    }));
+
+  return organizedResult;
 }

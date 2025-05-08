@@ -1,0 +1,176 @@
+Revised src/utils/organizeSemesters.ts
+
+The core idea is:
+
+Parse each semester name to get its year and a sortable term order (Spring < Summer < Fall).
+Sort the entire list of semesters chronologically based on this.
+Then, apply your existing grouping logic (which you said is mostly fine) to this pre-sorted list. The pre-sorting should naturally place Summer terms correctly within the sequence that then gets divided into Freshman, Sophomore, etc.
+TypeScript
+
+import { Semester } from "./parseCourseData"; // Or your actual path to Semester type
+
+export interface OrganizedSemesterGroup {
+  yearLabel: string; // e.g., "FRESHMAN", "SOPHOMORE"
+  // 'year' was used in previous examples for sorting groups, ensure your actual structure matches.
+  // If yearLabel is the primary display and sort key for groups, that's fine.
+  semesters: Semester[];
+}
+
+// Defines the chronological order of terms within a calendar year
+const termOrderMap: { [key: string]: number } = {
+  SPRING: 1,
+  SUMMER: 2,
+  FALL: 3,
+  // Add other terms like WINTER if necessary, adjusting order
+};
+
+interface SortableSemester extends Semester {
+  parsedYear: number;
+  termSortOrder: number;
+  termName: string; // "SPRING", "SUMMER", "FALL"
+}
+
+function parseSemesterName(name: string): { year: number; term: string; termSortOrder: number } {
+  const upperName = name.toUpperCase();
+  const yearMatch = upperName.match(/\d{4}/);
+  const year = yearMatch ? parseInt(yearMatch[0], 10) : 0;
+
+  let term = "UNKNOWN";
+  let termSortOrder = 99; // Default for unknown terms, sorts last
+
+  if (upperName.includes("SPRING")) {
+    term = "SPRING";
+    termSortOrder = termOrderMap.SPRING;
+  } else if (upperName.includes("SUMMER")) {
+    term = "SUMMER";
+    termSortOrder = termOrderMap.SUMMER;
+  } else if (upperName.includes("FALL")) {
+    term = "FALL";
+    termSortOrder = termOrderMap.FALL;
+  }
+  // Add other terms as needed
+
+  return { year, term, termSortOrder };
+}
+
+export function organizeSemesters(semesters: Semester[]): OrganizedSemesterGroup[] {
+  if (!semesters || semesters.length === 0) {
+    return [];
+  }
+
+  // 1. Create sortable semester objects
+  const sortableSemesters: SortableSemester[] = semesters.map(s => {
+    const { year, term, termSortOrder } = parseSemesterName(s.name);
+    return {
+      ...s,
+      parsedYear: year,
+      termSortOrder: termSortOrder,
+      termName: term,
+    };
+  });
+
+  // 2. Sort all semesters chronologically
+  sortableSemesters.sort((a, b) => {
+    if (a.parsedYear !== b.parsedYear) {
+      return a.parsedYear - b.parsedYear; // Sort by year first
+    }
+    return a.termSortOrder - b.termSortOrder; // Then by term order (Spring < Summer < Fall)
+  });
+
+  // 3. Apply your existing grouping logic (simplified placeholder)
+  //    THIS IS WHERE YOUR CURRENT GROUPING LOGIC (FRESHMAN, SOPHOMORE) SHOULD BE APPLIED
+  //    to the `sortableSemesters` list.
+  //    The key is that `sortableSemesters` is now correctly ordered.
+
+  // Example Grouping Logic (assuming academic year starts in Fall):
+  // You'll need to replace this with your actual, more complex grouping logic
+  // that determines "FRESHMAN", "SOPHOMORE", etc.
+  const groups: { [yearLabel: string]: SortableSemester[] } = {};
+  const academicYearLabels = ["FRESHMAN", "SOPHOMORE", "JUNIOR", "SENIOR", "BEYOND SENIOR"]; // Extend as needed
+  let firstFallYear = -1;
+
+  // Determine the first Fall year to anchor academic years
+  for (const sem of sortableSemesters) {
+    if (sem.termName === "FALL") {
+      firstFallYear = sem.parsedYear;
+      break;
+    }
+  }
+  // If no Fall semester, the earliest year could be the anchor, or handle as a special case
+  if (firstFallYear === -1 && sortableSemesters.length > 0) {
+     // If starts with Spring or Summer, that academic year effectively started the previous calendar year's Fall
+    firstFallYear = sortableSemesters[0].parsedYear - (sortableSemesters[0].termName === "FALL" ? 0 : 1);
+  }
+
+
+  sortableSemesters.forEach(semester => {
+    let academicYearStart = semester.parsedYear;
+    if (semester.termName === "SPRING" || semester.termName === "SUMMER") {
+      academicYearStart--; // Spring & Summer belong to the academic year that started with the previous Fall
+    }
+
+    const yearIndex = firstFallYear !== -1 ? academicYearStart - firstFallYear : 0;
+    const yearLabel = academicYearLabels[yearIndex] || `YEAR ${yearIndex + 1}`;
+
+    if (!groups[yearLabel]) {
+      groups[yearLabel] = [];
+    }
+    groups[yearLabel].push(semester);
+  });
+
+  const organizedResult: OrganizedSemesterGroup[] = Object.keys(groups)
+    // Sort the groups themselves (e.g., FRESHMAN before SOPHOMORE)
+    .sort((labelA, labelB) => {
+        const indexA = academicYearLabels.indexOf(labelA);
+        const indexB = academicYearLabels.indexOf(labelB);
+        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+        if (indexA !== -1) return -1; // Known label comes first
+        if (indexB !== -1) return 1;
+        return labelA.localeCompare(labelB); // Fallback for "YEAR X"
+    })
+    .map(yearLabel => ({
+      yearLabel: yearLabel,
+      semesters: groups[yearLabel], // Semesters within this group are already sorted chronologically
+    }));
+
+  return organizedResult;
+}
+Explanation of Key Changes:
+
+termOrderMap: A map to define the desired sorting order of terms within a year (e.g., SPRING: 1, SUMMER: 2, FALL: 3).
+
+parseSemesterName Function:
+
+Takes a semester name (e.g., "Summer 2024").
+Extracts the year (2024).
+Determines the term ("SUMMER").
+Assigns a termSortOrder based on termOrderMap.
+SortableSemester Interface: Extends your Semester type to include these parsed properties.
+
+Initial Sorting:
+
+Before any grouping, the entire semesters array is mapped to SortableSemester objects.
+This new array, sortableSemesters, is then sorted:
+Primarily by parsedYear.
+Secondarily by termSortOrder.
+This ensures that "Spring 2024", "Summer 2024", and "Fall 2024" are always in that specific order relative to each other.
+Apply Your Grouping Logic:
+
+Crucially, you need to take the now chronologically sorted sortableSemesters array and apply your existing logic that creates the "FRESHMAN", "SOPHOMORE", etc., groups.
+The example grouping logic I've included above is a simplified placeholder to demonstrate that the grouping happens after the comprehensive sorting. It attempts to assign semesters to academic years (Freshman, Sophomore, etc.) based on when the academic year starts (typically Fall).
+Because the sortableSemesters list is already perfectly ordered (Spring YYYY, Summer YYYY, Fall YYYY), when your logic assigns these to a group like "FRESHMAN," they will naturally maintain that correct internal order within the "FRESHMAN" group's semesters array.
+How this addresses the "Summer" placement:
+
+By sorting all semesters correctly first, when your grouping logic (which you indicated is mostly fine) assigns, for example:
+
+"Spring 2024" to FRESHMAN
+"Summer 2024" to FRESHMAN
+"Fall 2024" to SOPHOMORE
+The semesters array within the "FRESHMAN" group will have "Spring 2024" followed by "Summer 2024" because they were already in that order in the sortableSemesters list before grouping. The "SOPHOMORE" group would then correctly start with "Fall 2024".
+
+To Integrate:
+
+Modify your src/utils/organizeSemesters.ts file.
+Incorporate the termOrderMap, parseSemesterName function, and the SortableSemester interface.
+Most importantly: Ensure that the first major step in your organizeSemesters function is to create the sortableSemesters array and sort it as shown in step 1 and 2 of the code.
+Then, take this fully sorted sortableSemesters list and feed it into your existing mechanism that generates the OrganizedSemesterGroup[] (the one that produces the "FRESHMAN", "SOPHOMORE" labels).
