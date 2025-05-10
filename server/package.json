@@ -8,7 +8,8 @@
     "build": "esbuild index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "node dist/index.js",
     "check": "tsc --noEmit",
-    "lint": "eslint . --ext .ts"
+    "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --max-warnings 0",
+    "lint:fix": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --fix"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.802.0",

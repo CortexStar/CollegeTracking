@@ -6,7 +6,8 @@
   "scripts": {
     "worker": "tsx worker.ts",
     "check": "tsc --noEmit",
-    "lint": "eslint . --ext .ts"
+    "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --max-warnings 0",
+    "lint:fix": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --fix"
   },
   "dependencies": {
     "bullmq": "^5.52.1",
