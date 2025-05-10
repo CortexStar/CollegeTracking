@@ -11,11 +11,12 @@
   "dependencies": {
     "bullmq": "^5.52.1",
     "db": "workspace:*",
+    "ioredis": "^5.6.1",
     "redis": "^5.0.1",
     "shared": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "5.6.3",
-    "tsx": "^4.19.1"
+    "tsx": "^4.19.1",
+    "typescript": "5.6.3"
   }
 }
