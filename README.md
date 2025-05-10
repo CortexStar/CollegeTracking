@@ -30,7 +30,7 @@ This project uses a monorepo structure with pnpm workspaces and Turborepo:
 - Node.js v20+
 - pnpm (install with `npm install -g pnpm`)
 - PostgreSQL database
-
+### THE WORLD IS CRASHING
 ### Setup
 
 1. Install dependencies:
